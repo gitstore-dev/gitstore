@@ -103,7 +103,7 @@ collect_files_staged_or_diff() {
 
   git_cmd+=(-- '*.go')
 
-  "${git_cmd[@]}" | while read -r status p1 p2; do
+  "${git_cmd[@]}" | while IFS=$'\t' read -r status p1 p2; do
     case "$status" in
       A|M)
         printf '%s\t%s\n' "$status" "$p1"
