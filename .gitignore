@@ -34,7 +34,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/go.code-snippets
 .idea/
 *.swp
 *.swo

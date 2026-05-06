@@ -419,6 +419,50 @@ GITSTORE_CACHE_TTL=300  # 5 minutes
 GITSTORE_LOG_LEVEL=info
 ```
 
+### Go Licence Headers
+
+All Go source files in this repository should include this header near the top of the file:
+
+```go
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 GitStore contributors
+```
+
+Use the checker script for enforcement:
+
+```bash
+# All tracked Go files
+./scripts/check-go-license-headers.sh --all
+
+# Only staged added/modified Go files (used by pre-commit)
+./scripts/check-go-license-headers.sh --staged
+
+# Added/modified files compared to your base branch
+./scripts/check-go-license-headers.sh --diff-base origin/main
+```
+
+Install repository hooks once per clone:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+This enables `.githooks/pre-commit`, which blocks commits when staged Go files are missing headers or use an outdated year.
+
+CI also enforces this via `.github/workflows/go-license-headers.yml`.
+
+### IDE Setup (GoLand and VS Code)
+
+- **VS Code**
+  - Use the `gostorehdr` snippet from `.vscode/go.code-snippets` to insert the standard header quickly.
+  - Run the task `go:check-license-headers-staged` before commit (or `go:check-license-headers-all` for a full scan) from `.vscode/tasks.json`.
+
+- **GoLand / JetBrains IDEs**
+  - Configure a Copyright profile with the same SPDX + copyright text.
+  - Enable "Before Commit" execution of:
+    - `./scripts/check-go-license-headers.sh --staged`
+  - Optionally add an External Tool that runs the same command for one-click validation.
+
 ---
 
 ## Testing
