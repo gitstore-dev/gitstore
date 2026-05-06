@@ -14,6 +14,9 @@ on:
       - 'scripts/check-go-license-headers.sh'
       - '.github/workflows/go-license-headers.yml'
 
+permissions:
+  contents: read
+
 jobs:
   check-go-license-headers:
     runs-on: ubuntu-latest
