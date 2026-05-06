@@ -1,7 +1,7 @@
 // HTTP Git Server Implementation
 //
 // Implements git push/pull over HTTP with smart protocol support
-// Includes pre-receive hooks for validation
+// Hook extension points are reserved for future policy enforcement
 
 use axum::{
     body::{Body, Bytes},
@@ -182,7 +182,7 @@ async fn upload_pack(
 /// Handle POST /:repo/git-receive-pack
 ///
 /// Handles git push
-/// TODO pre-receive validation hooks
+/// TODO add pre/post-receive hook execution pipeline
 #[axum::debug_handler]
 async fn receive_pack(
     State(state): State<GitServerState>,
