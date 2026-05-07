@@ -2,7 +2,7 @@
 
 **Feature Branch**: `004-grpc-git-service`
 **Created**: 2026-05-06
-**Status**: Done
+**Status**: Closed
 **Input**: User description: "GH#65 — Replace filesystem-level coupling between gitstore-api and gitstore-git-service with a gRPC contract so all Git read/write operations are executed by gitstore-git-service. Supersedes User Story 2 (Operator Deploys Multiple API Instances) from specs/002-production-readiness and T152."
 
 ## Clarifications
