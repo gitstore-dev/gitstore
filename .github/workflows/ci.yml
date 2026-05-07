@@ -26,6 +26,7 @@ jobs:
       uses: bufbuild/buf-action@v1
       with:
         version: 1.69.0
+        setup_only: true
 
     - name: Lint proto files
       run: buf lint shared/proto/
@@ -146,6 +147,10 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [rust-test, go-test]
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'integration') ||
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'merge_group'
 
     steps:
     - uses: actions/checkout@v6
@@ -194,6 +199,10 @@ jobs:
     name: gRPC Integration Tests (testcontainers)
     runs-on: ubuntu-latest
     needs: [rust-test, go-test]
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'integration') ||
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'merge_group'
 
     steps:
     - uses: actions/checkout@v6
@@ -205,8 +214,7 @@ jobs:
         cache-dependency-path: gitstore-api/go.sum
 
     - name: Build git-service Docker image
-      working-directory: ./gitstore-git-service
-      run: docker build -t gitstore-git-service:latest .
+      run: docker build -f docker/git-service.Dockerfile -t gitstore-git-service:latest .
 
     - name: Run gRPC integration tests
       working-directory: ./gitstore-api
@@ -262,4 +270,11 @@ jobs:
           echo "Build failed!"
           exit 1
         fi
+        for job in integration-test grpc-integration-test; do
+          result=$(eval echo \${{ needs.${job}.result }})
+          if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+            echo "$job failed (result: $result)"
+            exit 1
+          fi
+        done
         echo "All checks passed! ✅"

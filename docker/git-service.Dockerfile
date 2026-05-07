@@ -16,6 +16,8 @@ RUN apk add --no-cache \
     pkgconf \
     openssl-dev \
     openssl-libs-static \
+    zlib-dev \
+    zlib-static \
     cmake \
     make \
     musl-dev \
