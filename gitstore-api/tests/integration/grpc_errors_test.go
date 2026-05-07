@@ -107,7 +107,7 @@ func TestGRPCGetLatestTagEmptyRepo(t *testing.T) {
 		Env: map[string]string{
 			"GITSTORE_GRPC_PORT": "50051",
 		},
-		WaitingFor: wait.ForLog("gRPC server listening").
+		WaitingFor: wait.ForListeningPort("50051/tcp").
 			WithStartupTimeout(60 * time.Second),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

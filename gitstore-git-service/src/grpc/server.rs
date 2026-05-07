@@ -313,8 +313,9 @@ impl GitService for GitServiceImpl {
             let sig = git2::Signature::now(author_name, author_email)
                 .map_err(|e| Status::internal(format!("signature: {}", e)))?;
 
-            let parent_commit = crate::git::repo::get_head_commit(&work_repo)
-                .map_err(|e| Status::internal(format!("head commit: {}", e)))?;
+            let maybe_parent = crate::git::repo::get_head_commit(&work_repo).ok();
+            let is_initial = maybe_parent.is_none();
+            let parents: Vec<&git2::Commit<'_>> = maybe_parent.iter().collect();
 
             let commit_oid = work_repo
                 .commit(
@@ -323,9 +324,18 @@ impl GitService for GitServiceImpl {
                     &sig,
                     &req.commit_message,
                     &tree,
-                    &[&parent_commit],
+                    &parents,
                 )
                 .map_err(|e| Status::internal(format!("commit: {}", e)))?;
+
+            // On an initial commit git2 leaves HEAD pointing to an unborn
+            // branch (no refs/heads/main yet). Create the ref explicitly so
+            // the push refspec resolves.
+            if is_initial {
+                work_repo
+                    .reference("refs/heads/main", commit_oid, false, "initial branch")
+                    .map_err(|e| Status::internal(format!("create branch ref: {}", e)))?;
+            }
 
             // Push back to the bare repo.
             let mut remote = work_repo

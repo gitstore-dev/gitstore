@@ -37,7 +37,7 @@ func TestGRPCCatalogReloadAfterTagPush(t *testing.T) {
 			"GITSTORE_DATA_DIR":  "/data/repos",
 			"GITSTORE_GRPC_PORT": "50051",
 		},
-		WaitingFor: wait.ForLog("gRPC server listening").
+		WaitingFor: wait.ForListeningPort("50051/tcp").
 			WithStartupTimeout(60 * time.Second),
 	}
 
@@ -116,7 +116,7 @@ func TestGRPCCatalogReloadCoalescesNotifications(t *testing.T) {
 		Env: map[string]string{
 			"GITSTORE_GRPC_PORT": "50051",
 		},
-		WaitingFor: wait.ForLog("gRPC server listening").
+		WaitingFor: wait.ForListeningPort("50051/tcp").
 			WithStartupTimeout(60 * time.Second),
 	}
 

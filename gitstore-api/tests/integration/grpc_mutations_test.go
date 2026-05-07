@@ -38,7 +38,7 @@ func startMutationContainer(t *testing.T) (*gitclient.Client, func()) {
 			"GITSTORE_DATA_DIR":  "/data/repos",
 			"GITSTORE_GRPC_PORT": "50051",
 		},
-		WaitingFor: wait.ForLog("gRPC server listening").
+		WaitingFor: wait.ForListeningPort("50051/tcp").
 			WithStartupTimeout(60 * time.Second),
 	}
 
