@@ -5,9 +5,7 @@
 // Uses a Tower middleware layer that intercepts each RPC and records
 // grpc_server_handled_total and grpc_server_handling_seconds.
 
-use prometheus::{
-    register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounterVec,
-};
+use prometheus::{register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounterVec};
 use std::sync::OnceLock;
 
 static HANDLED_TOTAL: OnceLock<IntCounterVec> = OnceLock::new();
@@ -38,9 +36,7 @@ pub fn handling_seconds() -> &'static HistogramVec {
 
 /// Record a completed RPC call.
 pub fn record_rpc(method: &str, code: &str, duration_secs: f64) {
-    handled_total()
-        .with_label_values(&[method, code])
-        .inc();
+    handled_total().with_label_values(&[method, code]).inc();
     handling_seconds()
         .with_label_values(&[method])
         .observe(duration_secs);

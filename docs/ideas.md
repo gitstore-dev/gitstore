@@ -47,8 +47,8 @@ This document outlines GitStore's product strategy, architectural decisions, and
 Git-backed product catalogue with flexible configuration and data interchange formats.
 
 - **Improvement to Catalogue Frontmatter**: Kubernetes-style frontmatter for better configuration management and flexibility. `apiVersion`, `kind`, `metadata`, `spec` fields will be added to product, category, and collection files to enhance organisation and maintainability.
-  - Create a controller per the core object type (Product, Category, Collection) that reconciles desired state.
-  - **Operators**: Custom controllers + CRD will enable extensibility for new catalogue types and behaviours without modifying the core GitStore runtime.
+  - Create a control loop per the core object type (Product, Category, Collection) that reconciles desired state managed by a Controller Manager.
+  - **Operators (Operator Pattern)**: Controllers + CRD supports extensibility for new catalogue types and behaviours without modifying the core GitStore runtime.
 - **References in catalogue files**: Enable references in catalogue files to allow for more flexible and maintainable product, category, and collection definitions.
 - **Expressions in Product Files**: Allow merchants to use expressions in product files for dynamic pricing, inventory management, and other use cases.
 
@@ -56,7 +56,7 @@ Git-backed product catalogue with flexible configuration and data interchange fo
 
 Minimise barriers to local startup and experimentation.
 
-- **Local Bootstrap Script with In-Memory Defaults** (Initiative #43): Single command startup with zero infrastructure dependencies; optional external service flags for external deployments.
+- **Local Bootstrap Script with In-Memory Defaults**: Single command startup with zero infrastructure dependencies; optional external service flags for external deployments.
 - **Basic Inventory Management**: Develop an inventory management system that allows merchants to easily track and manage their stock levels.
 
 ### Phase 2: Commerce Core
@@ -66,7 +66,7 @@ Essential e-commerce operations: shopping carts, transactions, order lifecycle, 
 - **Basket Management**: Implement a robust basket management system that allows users to easily add, remove, and update items in their shopping cart.
 - **Checkout Process**: Develop a seamless checkout process that integrates with various payment gateways and provides a smooth user experience.
 - **Order Tracking**: Enable users to track their orders in real-time, providing updates on the status of their shipments and estimated delivery times.
-- **User Profiles** (Initiative #28): Create user profiles that allow customers to manage their personal information, view order history, and save their preferences. Integrates with OIDC and user-management services.
+- **User Profiles**: Create user profiles that allow customers to manage their personal information, view order history, and save their preferences. Integrates with OIDC and user-management services.
 
 ### Phase 3: Advanced & Extensibility
 
