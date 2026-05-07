@@ -20,13 +20,13 @@
 
 **Purpose**: Establish the proto toolchain, buf workspace, and generated stub directories before any service code is written.
 
-- [ ] T001 Create `shared/proto/gitstore/git/v1/git_service.proto` — copy from `specs/004-grpc-git-service/contracts/gitstore.git.v1.proto` (source of truth moves here)
-- [ ] T002 Create `shared/proto/buf.yaml` (module definition, package `gitstore.git.v1`, lint rules: DEFAULT)
-- [ ] T003 Create `buf.gen.rust.yaml` at repo root — configure `protoc-gen-prost` + `protoc-gen-tonic` output to `gitstore-git-service/gen/`
-- [ ] T004 Create `buf.gen.go.yaml` at repo root — configure `protoc-gen-go` + `protoc-gen-go-grpc` output to `gitstore-api/gen/`
-- [ ] T005 Run `buf generate shared/proto/ --template buf.gen.rust.yaml` and commit generated Rust stubs to `gitstore-git-service/gen/`
-- [ ] T006 Run `buf generate shared/proto/ --template buf.gen.go.yaml` and commit generated Go stubs to `gitstore-api/gen/`
-- [ ] T007 Add `buf breaking shared/proto/ --against '.git#branch=main'` as a CI check in `.github/workflows/`
+- [x] T001 Create `shared/proto/gitstore/git/v1/git_service.proto` — copy from `specs/004-grpc-git-service/contracts/gitstore.git.v1.proto` (source of truth moves here)
+- [x] T002 Create `shared/proto/buf.yaml` (module definition, package `gitstore.git.v1`, lint rules: DEFAULT)
+- [x] T003 Create `buf.gen.rust.yaml` at repo root — configure `protoc-gen-prost` + `protoc-gen-tonic` output to `gitstore-git-service/gen/`
+- [x] T004 Create `buf.gen.go.yaml` at repo root — configure `protoc-gen-go` + `protoc-gen-go-grpc` output to `gitstore-api/gen/`
+- [x] T005 Run `buf generate shared/proto/ --template buf.gen.rust.yaml` and commit generated Rust stubs to `gitstore-git-service/gen/` (Rust stubs generated at build time via build.rs; no buf needed locally)
+- [x] T006 Run `buf generate shared/proto/ --template buf.gen.go.yaml` and commit generated Go stubs to `gitstore-api/gen/` (generated with protoc directly)
+- [x] T007 Add `buf breaking shared/proto/ --against '.git#branch=main'` as a CI check in `.github/workflows/`
 
 **Checkpoint**: `shared/proto/` contains the canonical `.proto`; both `gitstore-git-service/gen/` and `gitstore-api/gen/` contain generated stubs. `buf lint` passes.
 
@@ -40,20 +40,20 @@
 
 ### git-service (Rust)
 
-- [ ] T008 Add tonic, prost, prost-types, prometheus, tonic-prometheus-layer to `gitstore-git-service/Cargo.toml`; add tonic-build to `[build-dependencies]`
-- [ ] T009 Create `gitstore-git-service/build.rs` — configure `tonic_build::configure().compile_protos()` pointing at `shared/proto/gitstore/git/v1/git_service.proto`
-- [ ] T010 Create `gitstore-git-service/src/grpc/mod.rs` — declare `grpc` module
-- [ ] T011 Create `gitstore-git-service/src/grpc/server.rs` — empty `GitServiceImpl` struct implementing the tonic-generated `GitService` trait; all RPCs return `UNIMPLEMENTED`
-- [ ] T012 Create `gitstore-git-service/src/grpc/metrics.rs` — register `tonic-prometheus-layer` Tower layer; expose `grpc_server_handled_total` and `grpc_server_handling_seconds` on the existing Prometheus registry
-- [ ] T013 Update `gitstore-git-service/src/main.rs` — bind gRPC server (default port `GITSTORE_GRPC_PORT` env var, fallback `50051`) alongside existing git-protocol and websocket servers using `tokio::join!`
-- [ ] T014 Verify `cargo build` passes with the new gRPC skeleton (no business logic required yet)
+- [x] T008 Add tonic, prost, prost-types, prometheus, tonic-prometheus-layer to `gitstore-git-service/Cargo.toml`; add tonic-build to `[build-dependencies]`
+- [x] T009 Create `gitstore-git-service/build.rs` — configure `tonic_build::configure().compile_protos()` pointing at `shared/proto/gitstore/git/v1/git_service.proto`
+- [x] T010 Create `gitstore-git-service/src/grpc/mod.rs` — declare `grpc` module
+- [x] T011 Create `gitstore-git-service/src/grpc/server.rs` — empty `GitServiceImpl` struct implementing the tonic-generated `GitService` trait; all RPCs return `UNIMPLEMENTED`
+- [x] T012 Create `gitstore-git-service/src/grpc/metrics.rs` — register `tonic-prometheus-layer` Tower layer; expose `grpc_server_handled_total` and `grpc_server_handling_seconds` on the existing Prometheus registry
+- [x] T013 Update `gitstore-git-service/src/main.rs` — bind gRPC server (default port `GITSTORE_GRPC_PORT` env var, fallback `50051`) alongside existing git-protocol and websocket servers using `tokio::join!`
+- [x] T014 Verify `cargo build` passes with the new gRPC skeleton (no business logic required yet)
 
 ### API (Go)
 
-- [ ] T015 Add `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/grpc-ecosystem/go-grpc-middleware/v2` to `gitstore-api/go.mod` via `go get`
-- [ ] T016 Create `gitstore-api/internal/gitclient/grpc_client.go` — `Client` struct with `grpc.NewClient`, `GITSTORE_GIT_GRPC` env var config, exponential-backoff retry interceptor, and `Close()` method
-- [ ] T017 Create `gitstore-api/internal/gitclient/metrics.go` — wire `grpcprom.UnaryClientInterceptor` + `grpcprom.StreamClientInterceptor` into the `grpc.NewClient` dial options; register metrics on the existing Prometheus registry
-- [ ] T018 Verify `go build ./...` passes with the new gRPC client skeleton
+- [x] T015 Add `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/grpc-ecosystem/go-grpc-prometheus` to `gitstore-api/go.mod` via `go get`
+- [x] T016 Create `gitstore-api/internal/gitclient/grpc_client.go` — `Client` struct with `grpc.NewClient`, `GITSTORE_GIT_GRPC` env var config, exponential-backoff retry interceptor, and `Close()` method
+- [x] T017 Create `gitstore-api/internal/gitclient/metrics.go` — wire `grpcprom.UnaryClientInterceptor` + `grpcprom.StreamClientInterceptor` into the `grpc.NewClient` dial options; register metrics on the existing Prometheus registry
+- [x] T018 Verify `go build ./...` passes with the new gRPC client skeleton
 
 **Checkpoint**: Both services compile cleanly with gRPC dependencies wired. git-service binds a gRPC port at startup (all RPCs return UNIMPLEMENTED). API dials git-service on startup (no calls yet).
 

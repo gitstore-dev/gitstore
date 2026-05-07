@@ -13,6 +13,24 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  proto-breaking:
+    name: Proto Breaking Change Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install buf
+      uses: bufbuild/buf-action@v1
+      with:
+        version: latest
+
+    - name: Lint proto files
+      run: buf lint shared/proto/
+
+    - name: Check for breaking changes
+      run: buf breaking shared/proto/ --against '.git#branch=main'
+
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
@@ -206,7 +224,7 @@ jobs:
   build-status:
     name: Build Status
     runs-on: ubuntu-latest
-    needs: [rust-test, go-test, integration-test, security-scan]
+    needs: [proto-breaking, rust-test, go-test, integration-test, security-scan]
     if: always()
 
     steps:

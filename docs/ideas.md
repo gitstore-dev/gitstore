@@ -10,7 +10,7 @@ This document outlines GitStore's product strategy, architectural decisions, and
 - **Optional capability modules:** recommendations, OIDC, user management, and other integrations are deployable add-ons.
 - **Local-first adoption principle:** a single bootstrap script should run GitStore locally with zero heavy infrastructure requirements.
 - **In-memory first defaults:** use in-memory storage/cache for local development by default.
-- **Production-ready upgrades (optional):** external infrastructure like ScyllaDB/Cassandra, Redis/Valkey, vector databases, and external identity services can be enabled incrementally.
+- **Production-ready upgrades (optional):** external infrastructure like ScyllaDB for datastore, Valkey for cache, Qdrant for vector search, and external identity services can be enabled incrementally.
 
 #### Optional Modules and Dependencies
 
