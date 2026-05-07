@@ -114,7 +114,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Start gRPC server
     let grpc_addr: SocketAddr = format!("0.0.0.0:{}", args.grpc_port).parse()?;
     let grpc_service = GitServiceImpl::new(data_path.join("catalog.git"));
-    info!(grpc_port = args.grpc_port, "gRPC server starting on {}", grpc_addr);
+    info!(
+        grpc_port = args.grpc_port,
+        "gRPC server starting on {}", grpc_addr
+    );
     let grpc_handle = tokio::spawn(async move {
         if let Err(e) = tonic::transport::Server::builder()
             .add_service(GitServiceServer::new(grpc_service))

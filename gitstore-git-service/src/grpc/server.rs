@@ -103,7 +103,11 @@ impl GitService for GitServiceImpl {
             let repo = init_or_open_repository(&repo_path)
                 .map_err(|e| Status::internal(format!("failed to open repo: {}", e)))?;
 
-            let ref_str = if req.r#ref.is_empty() { "HEAD".to_string() } else { req.r#ref.clone() };
+            let ref_str = if req.r#ref.is_empty() {
+                "HEAD".to_string()
+            } else {
+                req.r#ref.clone()
+            };
             let commit = resolve_ref_to_commit(&repo, &ref_str)?;
 
             let tree = commit
@@ -112,7 +116,12 @@ impl GitService for GitServiceImpl {
 
             let entry = tree
                 .get_path(std::path::Path::new(&req.path))
-                .map_err(|_| Status::not_found(format!("file '{}' not found at ref '{}'", req.path, ref_str)))?;
+                .map_err(|_| {
+                    Status::not_found(format!(
+                        "file '{}' not found at ref '{}'",
+                        req.path, ref_str
+                    ))
+                })?;
 
             let blob = repo
                 .find_blob(entry.id())
@@ -158,28 +167,44 @@ impl GitService for GitServiceImpl {
                 }
             };
 
-            let ref_str = if req.r#ref.is_empty() { "HEAD".to_string() } else { req.r#ref.clone() };
+            let ref_str = if req.r#ref.is_empty() {
+                "HEAD".to_string()
+            } else {
+                req.r#ref.clone()
+            };
             let commit = match resolve_ref_to_commit(&repo, &ref_str) {
                 Ok(c) => c,
-                Err(e) => { send(Err(e)); return; }
+                Err(e) => {
+                    send(Err(e));
+                    return;
+                }
             };
 
             let tree = match commit.tree() {
                 Ok(t) => t,
-                Err(e) => { send(Err(Status::internal(format!("tree: {}", e)))); return; }
+                Err(e) => {
+                    send(Err(Status::internal(format!("tree: {}", e))));
+                    return;
+                }
             };
 
             let entry = match tree.get_path(std::path::Path::new(&req.path)) {
                 Ok(e) => e,
                 Err(_) => {
-                    send(Err(Status::not_found(format!("file '{}' not found", req.path))));
+                    send(Err(Status::not_found(format!(
+                        "file '{}' not found",
+                        req.path
+                    ))));
                     return;
                 }
             };
 
             let blob = match repo.find_blob(entry.id()) {
                 Ok(b) => b,
-                Err(e) => { send(Err(Status::internal(format!("blob: {}", e)))); return; }
+                Err(e) => {
+                    send(Err(Status::internal(format!("blob: {}", e))));
+                    return;
+                }
             };
 
             const CHUNK: usize = 256 * 1024; // 256 KiB
@@ -195,7 +220,9 @@ impl GitService for GitServiceImpl {
             }
         });
 
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
+            rx,
+        )))
     }
 
     async fn list_files(
@@ -209,7 +236,11 @@ impl GitService for GitServiceImpl {
             let repo = init_or_open_repository(&repo_path)
                 .map_err(|e| Status::internal(format!("failed to open repo: {}", e)))?;
 
-            let ref_str = if req.r#ref.is_empty() { "HEAD".to_string() } else { req.r#ref.clone() };
+            let ref_str = if req.r#ref.is_empty() {
+                "HEAD".to_string()
+            } else {
+                req.r#ref.clone()
+            };
             let commit = resolve_ref_to_commit(&repo, &ref_str)?;
             let ref_commit_sha = commit.id().to_string();
 
@@ -237,11 +268,9 @@ impl GitService for GitServiceImpl {
                 .map_err(|e| Status::internal(format!("failed to create tempdir: {}", e)))?;
 
             // Clone the bare repo into a working directory.
-            let work_repo = git2::Repository::clone(
-                repo_path.to_str().unwrap_or_default(),
-                tmp.path(),
-            )
-            .map_err(|e| Status::internal(format!("failed to clone: {}", e)))?;
+            let work_repo =
+                git2::Repository::clone(repo_path.to_str().unwrap_or_default(), tmp.path())
+                    .map_err(|e| Status::internal(format!("failed to clone: {}", e)))?;
 
             // Write the file.
             let file_path = tmp.path().join(&req.path);
@@ -253,39 +282,56 @@ impl GitService for GitServiceImpl {
                 .map_err(|e| Status::internal(format!("write file: {}", e)))?;
 
             // Stage and commit.
-            let mut index = work_repo.index()
+            let mut index = work_repo
+                .index()
                 .map_err(|e| Status::internal(format!("index: {}", e)))?;
-            index.add_path(std::path::Path::new(&req.path))
+            index
+                .add_path(std::path::Path::new(&req.path))
                 .map_err(|e| Status::internal(format!("stage: {}", e)))?;
-            index.write()
+            index
+                .write()
                 .map_err(|e| Status::internal(format!("index write: {}", e)))?;
 
-            let tree_oid = index.write_tree()
+            let tree_oid = index
+                .write_tree()
                 .map_err(|e| Status::internal(format!("write tree: {}", e)))?;
-            let tree = work_repo.find_tree(tree_oid)
+            let tree = work_repo
+                .find_tree(tree_oid)
                 .map_err(|e| Status::internal(format!("find tree: {}", e)))?;
 
-            let author_name = if req.author_name.is_empty() { "GitStore" } else { &req.author_name };
-            let author_email = if req.author_email.is_empty() { "gitstore@localhost" } else { &req.author_email };
+            let author_name = if req.author_name.is_empty() {
+                "GitStore"
+            } else {
+                &req.author_name
+            };
+            let author_email = if req.author_email.is_empty() {
+                "gitstore@localhost"
+            } else {
+                &req.author_email
+            };
             let sig = git2::Signature::now(author_name, author_email)
                 .map_err(|e| Status::internal(format!("signature: {}", e)))?;
 
             let parent_commit = crate::git::repo::get_head_commit(&work_repo)
                 .map_err(|e| Status::internal(format!("head commit: {}", e)))?;
 
-            let commit_oid = work_repo.commit(
-                Some("HEAD"),
-                &sig, &sig,
-                &req.commit_message,
-                &tree,
-                &[&parent_commit],
-            )
-            .map_err(|e| Status::internal(format!("commit: {}", e)))?;
+            let commit_oid = work_repo
+                .commit(
+                    Some("HEAD"),
+                    &sig,
+                    &sig,
+                    &req.commit_message,
+                    &tree,
+                    &[&parent_commit],
+                )
+                .map_err(|e| Status::internal(format!("commit: {}", e)))?;
 
             // Push back to the bare repo.
-            let mut remote = work_repo.find_remote("origin")
+            let mut remote = work_repo
+                .find_remote("origin")
                 .map_err(|e| Status::internal(format!("find remote: {}", e)))?;
-            remote.push(&["refs/heads/main:refs/heads/main"], None)
+            remote
+                .push(&["refs/heads/main:refs/heads/main"], None)
                 .map_err(|e| Status::internal(format!("push: {}", e)))?;
 
             let branch = "main".to_string();
@@ -311,11 +357,9 @@ impl GitService for GitServiceImpl {
             let tmp = tempfile::tempdir()
                 .map_err(|e| Status::internal(format!("failed to create tempdir: {}", e)))?;
 
-            let work_repo = git2::Repository::clone(
-                repo_path.to_str().unwrap_or_default(),
-                tmp.path(),
-            )
-            .map_err(|e| Status::internal(format!("failed to clone: {}", e)))?;
+            let work_repo =
+                git2::Repository::clone(repo_path.to_str().unwrap_or_default(), tmp.path())
+                    .map_err(|e| Status::internal(format!("failed to clone: {}", e)))?;
 
             let file_path = tmp.path().join(&req.path);
             if !file_path.exists() {
@@ -324,38 +368,55 @@ impl GitService for GitServiceImpl {
             std::fs::remove_file(&file_path)
                 .map_err(|e| Status::internal(format!("remove: {}", e)))?;
 
-            let mut index = work_repo.index()
+            let mut index = work_repo
+                .index()
                 .map_err(|e| Status::internal(format!("index: {}", e)))?;
-            index.remove_path(std::path::Path::new(&req.path))
+            index
+                .remove_path(std::path::Path::new(&req.path))
                 .map_err(|e| Status::internal(format!("unstage: {}", e)))?;
-            index.write()
+            index
+                .write()
                 .map_err(|e| Status::internal(format!("index write: {}", e)))?;
 
-            let tree_oid = index.write_tree()
+            let tree_oid = index
+                .write_tree()
                 .map_err(|e| Status::internal(format!("write tree: {}", e)))?;
-            let tree = work_repo.find_tree(tree_oid)
+            let tree = work_repo
+                .find_tree(tree_oid)
                 .map_err(|e| Status::internal(format!("find tree: {}", e)))?;
 
-            let author_name = if req.author_name.is_empty() { "GitStore" } else { &req.author_name };
-            let author_email = if req.author_email.is_empty() { "gitstore@localhost" } else { &req.author_email };
+            let author_name = if req.author_name.is_empty() {
+                "GitStore"
+            } else {
+                &req.author_name
+            };
+            let author_email = if req.author_email.is_empty() {
+                "gitstore@localhost"
+            } else {
+                &req.author_email
+            };
             let sig = git2::Signature::now(author_name, author_email)
                 .map_err(|e| Status::internal(format!("signature: {}", e)))?;
 
             let parent_commit = crate::git::repo::get_head_commit(&work_repo)
                 .map_err(|e| Status::internal(format!("head commit: {}", e)))?;
 
-            let commit_oid = work_repo.commit(
-                Some("HEAD"),
-                &sig, &sig,
-                &req.commit_message,
-                &tree,
-                &[&parent_commit],
-            )
-            .map_err(|e| Status::internal(format!("commit: {}", e)))?;
+            let commit_oid = work_repo
+                .commit(
+                    Some("HEAD"),
+                    &sig,
+                    &sig,
+                    &req.commit_message,
+                    &tree,
+                    &[&parent_commit],
+                )
+                .map_err(|e| Status::internal(format!("commit: {}", e)))?;
 
-            let mut remote = work_repo.find_remote("origin")
+            let mut remote = work_repo
+                .find_remote("origin")
                 .map_err(|e| Status::internal(format!("find remote: {}", e)))?;
-            remote.push(&["refs/heads/main:refs/heads/main"], None)
+            remote
+                .push(&["refs/heads/main:refs/heads/main"], None)
                 .map_err(|e| Status::internal(format!("push: {}", e)))?;
 
             Ok(Response::new(DeleteFileResponse {
@@ -383,20 +444,28 @@ impl GitService for GitServiceImpl {
                 repo.revparse_single("HEAD")
                     .map_err(|e| Status::not_found(format!("HEAD not found: {}", e)))?
             } else {
-                repo.revparse_single(&req.target_commit_sha)
-                    .map_err(|e| Status::not_found(format!("target '{}' not found: {}", req.target_commit_sha, e)))?
+                repo.revparse_single(&req.target_commit_sha).map_err(|e| {
+                    Status::not_found(format!(
+                        "target '{}' not found: {}",
+                        req.target_commit_sha, e
+                    ))
+                })?
             };
 
             // Check for existing tag.
             let ref_name = format!("refs/tags/{}", req.tag_name);
             if repo.find_reference(&ref_name).is_ok() {
-                return Err(Status::already_exists(format!("tag '{}' already exists", req.tag_name)));
+                return Err(Status::already_exists(format!(
+                    "tag '{}' already exists",
+                    req.tag_name
+                )));
             }
 
             let sig = git2::Signature::now("GitStore", "gitstore@localhost")
                 .map_err(|e| Status::internal(format!("signature: {}", e)))?;
 
-            let tag_oid = repo.tag(&req.tag_name, &target_obj, &sig, &req.message, false)
+            let tag_oid = repo
+                .tag(&req.tag_name, &target_obj, &sig, &req.message, false)
                 .map_err(|e| Status::internal(format!("tag: {}", e)))?;
 
             Ok(Response::new(CreateTagResponse {
@@ -428,7 +497,11 @@ impl GitService for GitServiceImpl {
                 .filter_map(|name| {
                     let commit_sha = crate::git::repo::get_tag_commit(&repo, &name).ok()?;
                     let message = get_tag_message(&repo, &name).unwrap_or_default();
-                    Some(TagEntry { name, commit_sha, message })
+                    Some(TagEntry {
+                        name,
+                        commit_sha,
+                        message,
+                    })
                 })
                 .collect();
 
@@ -452,7 +525,11 @@ impl GitService for GitServiceImpl {
             let all_tags = list_tags(&repo)
                 .map_err(|e| Status::internal(format!("failed to list tags: {}", e)))?;
 
-            let prefix = if req.prefix.is_empty() { "v" } else { &req.prefix };
+            let prefix = if req.prefix.is_empty() {
+                "v"
+            } else {
+                &req.prefix
+            };
 
             let mut release_tags: Vec<String> = all_tags
                 .into_iter()
@@ -508,7 +585,9 @@ fn cmp_semver_str(a: &str, b: &str) -> std::cmp::Ordering {
 
 /// Returns the annotated tag message, or empty string for lightweight tags.
 fn get_tag_message(repo: &git2::Repository, tag_name: &str) -> Option<String> {
-    let reference = repo.find_reference(&format!("refs/tags/{}", tag_name)).ok()?;
+    let reference = repo
+        .find_reference(&format!("refs/tags/{}", tag_name))
+        .ok()?;
     let tag = reference.peel_to_tag().ok()?;
     tag.message().map(|s| s.to_string())
 }
@@ -550,12 +629,15 @@ mod tests {
 
         let root_tree = repo.find_tree(root_tree_oid).unwrap();
         let sig = git2::Signature::now("test", "test@example.com").unwrap();
-        let commit_oid = repo.commit(Some("HEAD"), &sig, &sig, "init", &root_tree, &[]).unwrap();
+        let commit_oid = repo
+            .commit(Some("HEAD"), &sig, &sig, "init", &root_tree, &[])
+            .unwrap();
         drop(root_tree);
 
         let commit = repo.find_commit(commit_oid).unwrap();
         let obj = commit.as_object();
-        repo.tag("v1.0.0", obj, &sig, "release v1.0.0", false).unwrap();
+        repo.tag("v1.0.0", obj, &sig, "release v1.0.0", false)
+            .unwrap();
     }
 
     #[tokio::test]
@@ -623,7 +705,9 @@ mod tests {
         repo_with_commit(dir.path());
 
         let svc = make_test_service(dir.path());
-        let req = Request::new(GetLatestTagRequest { prefix: "v".to_string() });
+        let req = Request::new(GetLatestTagRequest {
+            prefix: "v".to_string(),
+        });
         let resp = svc.get_latest_tag(req).await.unwrap().into_inner();
 
         assert!(resp.found);
@@ -638,7 +722,9 @@ mod tests {
         git2::Repository::init_bare(dir.path()).unwrap();
 
         let svc = make_test_service(dir.path());
-        let req = Request::new(GetLatestTagRequest { prefix: "v".to_string() });
+        let req = Request::new(GetLatestTagRequest {
+            prefix: "v".to_string(),
+        });
         let resp = svc.get_latest_tag(req).await.unwrap().into_inner();
 
         assert!(!resp.found);
@@ -669,7 +755,8 @@ mod tests {
         let sig = git2::Signature::now("test", "test@example.com").unwrap();
         let oid = repo.commit(None, &sig, &sig, "init", &tree, &[]).unwrap();
         // Create refs/heads/main pointing to this commit.
-        repo.reference("refs/heads/main", oid, false, "init").unwrap();
+        repo.reference("refs/heads/main", oid, false, "init")
+            .unwrap();
         // Point HEAD to main.
         repo.set_head("refs/heads/main").unwrap();
     }
@@ -693,9 +780,15 @@ mod tests {
 
         // Verify the file appears in the bare repo at HEAD.
         let bare_repo2 = git2::Repository::open_bare(bare_dir.path()).unwrap();
-        let commit = bare_repo2.revparse_single("HEAD").unwrap().peel_to_commit().unwrap();
+        let commit = bare_repo2
+            .revparse_single("HEAD")
+            .unwrap()
+            .peel_to_commit()
+            .unwrap();
         let tree = commit.tree().unwrap();
-        assert!(tree.get_path(std::path::Path::new("products/new.md")).is_ok());
+        assert!(tree
+            .get_path(std::path::Path::new("products/new.md"))
+            .is_ok());
     }
 
     #[tokio::test]
