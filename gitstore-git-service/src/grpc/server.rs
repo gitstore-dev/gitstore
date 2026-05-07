@@ -142,7 +142,8 @@ impl GitService for GitServiceImpl {
         .map_err(|e| Status::internal(format!("task join error: {}", e)))?
     }
 
-    type GetFileStreamStream = tokio_stream::wrappers::ReceiverStream<Result<GetFileStreamResponse, Status>>;
+    type GetFileStreamStream =
+        tokio_stream::wrappers::ReceiverStream<Result<GetFileStreamResponse, Status>>;
 
     async fn get_file_stream(
         &self,
