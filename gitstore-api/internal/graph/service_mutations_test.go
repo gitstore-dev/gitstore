@@ -60,7 +60,7 @@ func (m *mockGitWriter) CreateTag(_ context.Context, p gitclient.CreateTagParams
 	return "tag123", nil
 }
 
-// staticCatalogLoader implements catalog.CatalogLoader with a fixed catalog.
+// staticCatalogLoader implements catalog.Loader with a fixed catalog.
 type staticCatalogLoader struct{ cat *catalog.Catalog }
 
 func (l *staticCatalogLoader) LoadFromTag(_ context.Context, _ string) (*catalog.Catalog, error) {

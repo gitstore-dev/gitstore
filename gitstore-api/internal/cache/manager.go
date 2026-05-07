@@ -18,14 +18,14 @@ import (
 type Manager struct {
 	mu       sync.RWMutex
 	catalog  *catalog.Catalog
-	loader   catalog.CatalogLoader
+	loader   catalog.Loader
 	logger   *zap.Logger
 	ttl      time.Duration
 	loadedAt time.Time
 }
 
 // NewManager creates a new cache manager
-func NewManager(loader catalog.CatalogLoader, logger *zap.Logger, ttl time.Duration) *Manager {
+func NewManager(loader catalog.Loader, logger *zap.Logger, ttl time.Duration) *Manager {
 	return &Manager{
 		loader: loader,
 		logger: logger,

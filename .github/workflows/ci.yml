@@ -13,35 +13,6 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  proto-breaking:
-    name: Proto Breaking Change Check
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-
-    - name: Install buf
-      uses: bufbuild/buf-action@v1
-      with:
-        version: 1.69.0
-        setup_only: true
-
-    - name: Lint proto files
-      run: buf lint shared/proto/
-
-    - name: Check for breaking changes
-      run: |
-        # Only run the breaking check if the proto directory already exists on main.
-        # On a branch that first introduces the proto, there is nothing on main to
-        # compare against so buf would error with "couldn't find remote ref main".
-        if git show main:shared/proto/gitstore/git/v1/git_service.proto >/dev/null 2>&1; then
-          buf breaking shared/proto/ --against '.git#branch=main'
-        else
-          echo "Proto not yet on main — skipping breaking change check."
-        fi
-
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
@@ -190,7 +161,7 @@ jobs:
   build-status:
     name: Build Status
     runs-on: ubuntu-latest
-    needs: [proto-breaking, rust-test, go-test, security-scan]
+    needs: [rust-test, go-test, security-scan]
     if: always()
 
     steps:

@@ -7,9 +7,9 @@ package catalog
 
 import "context"
 
-// CatalogLoader abstracts catalog loading so callers are not coupled to a
+// Loader abstracts catalog loading so callers are not coupled to a
 // specific transport (local git vs gRPC).
-type CatalogLoader interface {
+type Loader interface {
 	LoadFromTag(ctx context.Context, tag string) (*Catalog, error)
 	LoadFromLatestTag(ctx context.Context) (*Catalog, error)
 }
