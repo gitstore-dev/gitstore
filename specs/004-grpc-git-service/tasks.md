@@ -67,20 +67,20 @@
 
 ### Tests for User Story 1 ⚠️ Write FIRST — verify FAIL before implementing
 
-- [ ] T019 [P] [US1] Write integration test `gitstore-api/tests/integration/grpc_catalogue_load_test.go` — uses testcontainers-go to start a real git-service container; asserts API loads catalogue via gRPC with no shared volume (tag: `integration`)
-- [ ] T020 [P] [US1] Write unit test `gitstore-api/internal/gitclient/read_test.go` — stubs gRPC server with `bufconn`; tests `GetFile`, `ListFiles`, `GetLatestTag` client calls and error mapping
-- [ ] T021 [P] [US1] Write unit test `gitstore-api/internal/catalog/loader_test.go` — mocks gRPC client interface; verifies `LoadFromTag` and `LoadFromLatestTag` call the correct RPCs and parse returned bytes correctly
+- [x] T019 [P] [US1] Write integration test `gitstore-api/tests/integration/grpc_catalogue_load_test.go` — uses testcontainers-go to start a real git-service container; asserts API loads catalogue via gRPC with no shared volume (tag: `integration`)
+- [x] T020 [P] [US1] Write unit test `gitstore-api/internal/gitclient/read_test.go` — stubs gRPC server with `bufconn`; tests `GetFile`, `ListFiles`, `GetLatestTag` client calls and error mapping
+- [x] T021 [P] [US1] Write unit test `gitstore-api/internal/catalog/loader_test.go` — mocks gRPC client interface; verifies `LoadFromTag` and `LoadFromLatestTag` call the correct RPCs and parse returned bytes correctly
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Implement gRPC read operations in `gitstore-git-service/src/grpc/server.rs` — `GetFile`: open bare repo, resolve ref to tree, return raw blob bytes; `ListFiles`: walk tree under prefix, return `FileEntry` list
-- [ ] T023 [US1] Implement `GetLatestTag` and `ListTags` in `gitstore-git-service/src/grpc/server.rs` — reuse existing `git/repo.rs` `list_tags()` helper; add semver sort for `GetLatestTag`
-- [ ] T024 [P] [US1] Implement `GetFileStream` in `gitstore-git-service/src/grpc/server.rs` — server-streaming RPC that chunks file bytes at 256 KiB; used by catalogue loader for large repos
-- [ ] T025 [US1] Create `gitstore-api/internal/gitclient/read.go` — `ReadFile(ctx, path, ref)`, `ListFiles(ctx, prefix, ref)`, `ListTags(ctx, prefix)`, `GetLatestTag(ctx)` methods wrapping generated gRPC stubs
-- [ ] T026 [US1] Update `gitstore-api/internal/catalog/loader.go` — replace all `git.PlainOpen` / `go-git` calls with calls to the new `gitclient.Client` read methods; keep `LoadFromTag` and `LoadFromLatestTag` signatures unchanged
-- [ ] T027 [US1] Remove `github.com/go-git/go-git/v5` import from `gitstore-api/internal/catalog/loader.go`; run `go mod tidy` to prune transitive go-git dependencies
-- [ ] T028 [US1] Update `compose.yml` — remove `volumes` entry from the `api` service (`${GITSTORE_DATA_DIR:-git-data}:/data/repos:ro`); add `GITSTORE_GIT_GRPC=git-service:50051` env var; add port `50051` to git-service
-- [ ] T029 [US1] Update `gitstore-api/cmd/server/main.go` — replace `GITSTORE_GIT_REPO` local-path wiring with `GITSTORE_GIT_GRPC` address; remove shared-volume startup check
+- [x] T022 [US1] Implement gRPC read operations in `gitstore-git-service/src/grpc/server.rs` — `GetFile`: open bare repo, resolve ref to tree, return raw blob bytes; `ListFiles`: walk tree under prefix, return `FileEntry` list
+- [x] T023 [US1] Implement `GetLatestTag` and `ListTags` in `gitstore-git-service/src/grpc/server.rs` — reuse existing `git/repo.rs` `list_tags()` helper; add semver sort for `GetLatestTag`
+- [x] T024 [P] [US1] Implement `GetFileStream` in `gitstore-git-service/src/grpc/server.rs` — server-streaming RPC that chunks file bytes at 256 KiB; used by catalogue loader for large repos
+- [x] T025 [US1] Create `gitstore-api/internal/gitclient/read.go` — `ReadFile(ctx, path, ref)`, `ListFiles(ctx, prefix, ref)`, `ListTags(ctx, prefix)`, `GetLatestTag(ctx)` methods wrapping generated gRPC stubs
+- [x] T026 [US1] Update `gitstore-api/internal/catalog/loader.go` — replace all `git.PlainOpen` / `go-git` calls with calls to the new `gitclient.Client` read methods; keep `LoadFromTag` and `LoadFromLatestTag` signatures unchanged
+- [x] T027 [US1] Remove `github.com/go-git/go-git/v5` import from `gitstore-api/internal/catalog/loader.go`; run `go mod tidy` to prune transitive go-git dependencies
+- [x] T028 [US1] Update `compose.yml` — remove `volumes` entry from the `api` service (`${GITSTORE_DATA_DIR:-git-data}:/data/repos:ro`); add `GITSTORE_GIT_GRPC=git-service:50051` env var; add port `50051` to git-service
+- [x] T029 [US1] Update `gitstore-api/cmd/server/main.go` — replace `GITSTORE_GIT_REPO` local-path wiring with `GITSTORE_GIT_GRPC` address; remove shared-volume startup check
 
 **Checkpoint**: API starts with no shared volume. `docker compose up` succeeds. Three replicas all serve the correct catalogue. `go test ./tests/integration/... -tags integration` passes.
 
