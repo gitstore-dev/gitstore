@@ -24,7 +24,8 @@ on:
       - 'docker/api.Dockerfile'
       - 'compose.yml'
 
-permissions: {}
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,6 +35,8 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/checkout@v6
@@ -80,6 +83,8 @@ jobs:
   grpc-integration-test:
     name: gRPC Integration Tests (testcontainers)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/checkout@v6

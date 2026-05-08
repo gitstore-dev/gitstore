@@ -14,12 +14,15 @@ on:
     paths:
       - 'shared/proto/**'
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   proto-breaking:
     name: Proto Breaking Change Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/checkout@v6
