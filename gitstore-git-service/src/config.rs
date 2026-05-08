@@ -120,8 +120,11 @@ pub fn load_config_from(config_file: Option<&str>) -> Result<AppConfig, config::
     let builder = Config::builder()
         // Baked-in defaults as inline TOML
         .add_source(File::from_str(&defaults, FileFormat::Toml))
-        // Optional config file (gitstore.toml in working dir, or override path)
-        .add_source(File::with_name(config_file.unwrap_or("gitstore")).required(false))
+        // Discovery path (gitstore.toml) is optional; an explicit --config-file is required.
+        .add_source(
+            File::with_name(config_file.unwrap_or("gitstore"))
+                .required(config_file.is_some()),
+        )
         // Environment variables: GITSTORE_HTTP_PORT → http_port, etc.
         // prefix_separator("_") strips the GITSTORE_ prefix using a single
         // underscore. separator("__") then splits nested config-key levels using
@@ -201,7 +204,7 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
         let cfg =
-            load_config_from(Some("nonexistent_config_file_xyz")).expect("load_config failed");
+            load_config_from(None).expect("load_config failed");
         assert_eq!(cfg.http_port, 9418);
         assert_eq!(cfg.ws_port, 8080);
         assert_eq!(cfg.grpc_port, 50051);
@@ -217,7 +220,7 @@ mod tests {
         env::set_var("GITSTORE_HTTP_PORT", "8000");
         env::set_var("GITSTORE_LOG_LEVEL", "debug");
         let cfg =
-            load_config_from(Some("nonexistent_config_file_xyz")).expect("load_config failed");
+            load_config_from(None).expect("load_config failed");
         assert_eq!(cfg.http_port, 8000);
         assert_eq!(cfg.log_level, "debug");
         clear_env();
@@ -267,7 +270,7 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
         let cfg =
-            load_config_from(Some("nonexistent_config_file_xyz")).expect("load_config failed");
+            load_config_from(None).expect("load_config failed");
         let debug_str = format!("{:?}", cfg);
         assert!(debug_str.contains("http_port"));
         assert!(debug_str.contains("log_level"));
@@ -284,7 +287,7 @@ mod tests {
         clear_env();
         // Simulate dotenvy having loaded GITSTORE_LOG_LEVEL=trace from .env
         env::set_var("GITSTORE_LOG_LEVEL", "trace");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         assert_eq!(cfg.log_level, "trace");
         clear_env();
     }
@@ -297,7 +300,7 @@ mod tests {
         // dotenvy does not overwrite existing env vars — shell wins.
         // We model that here by just having debug set (the shell value).
         env::set_var("GITSTORE_LOG_LEVEL", "debug");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         assert_eq!(cfg.log_level, "debug");
         clear_env();
     }
@@ -307,7 +310,7 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
         // No env vars set and no .env file — defaults must apply
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         assert_eq!(cfg.http_port, 9418);
     }
 
@@ -327,6 +330,19 @@ mod tests {
         assert_eq!(cfg.http_port, 9418);
     }
 
+    // Explicit --config-file with a missing path must fail, not silently use defaults.
+
+    #[test]
+    fn test_explicit_config_file_missing_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        clear_env();
+        let result = load_config_from(Some("/nonexistent/path/that/cannot/exist"));
+        assert!(
+            result.is_err(),
+            "expected error when explicit config file does not exist"
+        );
+    }
+
     // T020: validation tests (US2)
 
     #[test]
@@ -334,7 +350,7 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
         env::set_var("GITSTORE_HTTP_PORT", "0");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         let result = cfg.validate();
         assert!(result.is_err(), "expected validation error for port 0");
         let err = result.unwrap_err();
@@ -350,7 +366,7 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
         env::set_var("GITSTORE_DATA_DIR", "");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         let result = cfg.validate();
         assert!(
             result.is_err(),
@@ -368,7 +384,7 @@ mod tests {
         // Make http_port == ws_port
         env::set_var("GITSTORE_HTTP_PORT", "8080");
         env::set_var("GITSTORE_WS_PORT", "8080");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         let result = cfg.validate();
         assert!(result.is_err(), "expected port uniqueness error");
         let err = result.unwrap_err();
@@ -383,7 +399,7 @@ mod tests {
         // Port 0 is invalid and same port across http/ws triggers uniqueness — multiple errors
         env::set_var("GITSTORE_HTTP_PORT", "0");
         env::set_var("GITSTORE_DATA_DIR", "");
-        let cfg = load_config_from(Some("nonexistent_config_file_xyz")).expect("load failed");
+        let cfg = load_config_from(None).expect("load failed");
         let result = cfg.validate();
         assert!(result.is_err());
         let err = result.unwrap_err();
