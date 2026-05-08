@@ -24,6 +24,8 @@ on:
       - 'docker/api.Dockerfile'
       - 'compose.yml'
 
+permissions: {}
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1

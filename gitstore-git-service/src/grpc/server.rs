@@ -52,11 +52,31 @@ fn resolve_ref_to_commit<'repo>(
         .map_err(|e| Status::internal(format!("failed to peel ref '{}' to commit: {}", ref_str, e)))
 }
 
-/// Walk the tree rooted at `commit` and collect all blobs under `prefix`.
+/// Reject paths that could escape the repository working directory.
+fn validate_repo_path(path: &str) -> Result<(), Status> {
+    if std::path::Path::new(path).is_absolute() {
+        return Err(Status::invalid_argument(format!(
+            "path '{}' must be relative",
+            path
+        )));
+    }
+    if path.split('/').any(|c| c == "..") {
+        return Err(Status::invalid_argument(format!(
+            "path '{}' must not contain '..'",
+            path
+        )));
+    }
+    Ok(())
+}
+
+/// Walk the tree rooted at `commit` and collect blobs under `prefix`.
+/// When `recursive` is false only direct children of the prefix directory
+/// are returned (no descent into subdirectories).
 fn list_tree_files(
     _repo: &git2::Repository,
     commit: &git2::Commit<'_>,
     prefix: &str,
+    recursive: bool,
 ) -> Result<Vec<FileEntry>, Status> {
     let tree = commit
         .tree()
@@ -66,6 +86,18 @@ fn list_tree_files(
 
     tree.walk(git2::TreeWalkMode::PreOrder, |dir, entry| {
         if entry.kind() != Some(git2::ObjectType::Blob) {
+            // When not recursive, skip descending into directories that are
+            // not directly inside the requested prefix.
+            if !recursive && entry.kind() == Some(git2::ObjectType::Tree) {
+                let dir_path = if dir.is_empty() {
+                    entry.name().unwrap_or("").to_string()
+                } else {
+                    format!("{}{}/", dir, entry.name().unwrap_or(""))
+                };
+                if !prefix.is_empty() && !dir_path.starts_with(prefix) {
+                    return git2::TreeWalkResult::Skip;
+                }
+            }
             return git2::TreeWalkResult::Ok;
         }
         let full_path = if dir.is_empty() {
@@ -75,9 +107,17 @@ fn list_tree_files(
         };
 
         if prefix.is_empty() || full_path.starts_with(prefix) {
+            // For non-recursive listings, skip files in subdirectories of the
+            // prefix (i.e. where the remaining path after prefix contains '/').
+            if !recursive {
+                let suffix = full_path.strip_prefix(prefix).unwrap_or(&full_path);
+                if suffix.contains('/') {
+                    return git2::TreeWalkResult::Ok;
+                }
+            }
             files.push(FileEntry {
                 path: full_path,
-                size_bytes: 0, // filled lazily below if needed
+                size_bytes: 0,
                 blob_sha: entry.id().to_string(),
             });
         }
@@ -245,7 +285,7 @@ impl GitService for GitServiceImpl {
             let commit = resolve_ref_to_commit(&repo, &ref_str)?;
             let ref_commit_sha = commit.id().to_string();
 
-            let files = list_tree_files(&repo, &commit, &req.path_prefix)?;
+            let files = list_tree_files(&repo, &commit, &req.path_prefix, req.recursive)?;
 
             Ok(Response::new(ListFilesResponse {
                 files,
@@ -265,6 +305,8 @@ impl GitService for GitServiceImpl {
         let _guard = self.write_lock.write().await;
 
         tokio::task::spawn_blocking(move || {
+            validate_repo_path(&req.path)?;
+
             let tmp = tempfile::tempdir()
                 .map_err(|e| Status::internal(format!("failed to create tempdir: {}", e)))?;
 
@@ -365,6 +407,8 @@ impl GitService for GitServiceImpl {
         let _guard = self.write_lock.write().await;
 
         tokio::task::spawn_blocking(move || {
+            validate_repo_path(&req.path)?;
+
             let tmp = tempfile::tempdir()
                 .map_err(|e| Status::internal(format!("failed to create tempdir: {}", e)))?;
 

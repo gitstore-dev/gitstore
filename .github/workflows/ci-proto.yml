@@ -14,6 +14,8 @@ on:
     paths:
       - 'shared/proto/**'
 
+permissions: {}
+
 jobs:
   proto-breaking:
     name: Proto Breaking Change Check
