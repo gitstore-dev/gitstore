@@ -122,8 +122,7 @@ pub fn load_config_from(config_file: Option<&str>) -> Result<AppConfig, config::
         .add_source(File::from_str(&defaults, FileFormat::Toml))
         // Discovery path (gitstore.toml) is optional; an explicit --config-file is required.
         .add_source(
-            File::with_name(config_file.unwrap_or("gitstore"))
-                .required(config_file.is_some()),
+            File::with_name(config_file.unwrap_or("gitstore")).required(config_file.is_some()),
         )
         // Environment variables: GITSTORE_HTTP_PORT → http_port, etc.
         // prefix_separator("_") strips the GITSTORE_ prefix using a single
@@ -203,8 +202,7 @@ mod tests {
     fn test_defaults_applied_when_no_source_set() {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
-        let cfg =
-            load_config_from(None).expect("load_config failed");
+        let cfg = load_config_from(None).expect("load_config failed");
         assert_eq!(cfg.http_port, 9418);
         assert_eq!(cfg.ws_port, 8080);
         assert_eq!(cfg.grpc_port, 50051);
@@ -219,8 +217,7 @@ mod tests {
         clear_env();
         env::set_var("GITSTORE_HTTP_PORT", "8000");
         env::set_var("GITSTORE_LOG_LEVEL", "debug");
-        let cfg =
-            load_config_from(None).expect("load_config failed");
+        let cfg = load_config_from(None).expect("load_config failed");
         assert_eq!(cfg.http_port, 8000);
         assert_eq!(cfg.log_level, "debug");
         clear_env();
@@ -269,8 +266,7 @@ mod tests {
     fn test_app_config_debug_includes_key_fields() {
         let _lock = ENV_LOCK.lock().unwrap();
         clear_env();
-        let cfg =
-            load_config_from(None).expect("load_config failed");
+        let cfg = load_config_from(None).expect("load_config failed");
         let debug_str = format!("{:?}", cfg);
         assert!(debug_str.contains("http_port"));
         assert!(debug_str.contains("log_level"));
