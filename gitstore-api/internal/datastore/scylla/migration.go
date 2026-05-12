@@ -26,10 +26,18 @@ const (
 	lockRetryBase  = 2 * time.Second
 )
 
-// RunMigrations acquires a distributed LWT lock, applies all pending CQL
-// migrations via gocqlx/migrate, then releases the lock.
+// RunMigrations ensures the migration lock table exists, acquires a distributed
+// LWT lock, applies all pending CQL migrations via gocqlx/migrate, then
+// releases the lock. The session must already be scoped to the target keyspace.
 // instanceID should be a unique string per process (e.g. a UUID).
 func RunMigrations(ctx context.Context, rawSession *gocql.Session, instanceID string, log *zap.Logger) error {
+	if err := rawSession.Query(
+		`CREATE TABLE IF NOT EXISTS schema_migrations_lock ` +
+			`(lock_key text PRIMARY KEY, holder text, acquired_at timestamp)`,
+	).WithContext(ctx).Exec(); err != nil {
+		return fmt.Errorf("create lock table: %w", err)
+	}
+
 	log.Info("acquiring migration lock", zap.String("instance", instanceID))
 
 	acquired, err := acquireLockWithRetry(ctx, rawSession, instanceID, log)

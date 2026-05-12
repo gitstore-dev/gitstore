@@ -22,6 +22,7 @@ import (
 func newRawSession(t *testing.T) *gocql.Session {
 	t.Helper()
 	cluster := gocql.NewCluster(scyllaAddr)
+	cluster.Keyspace = "gitstore" // keyspace provisioned by TestMain in backend_test.go
 	cluster.Consistency = gocql.Quorum
 	session, err := cluster.CreateSession()
 	require.NoError(t, err)

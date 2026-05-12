@@ -4,7 +4,7 @@ services:
     container_name: gitstore-scylla
     ports:
       - "9042:9042"   # CQL native transport
-    command: --developer-mode=1 --overprovisioned=1
+    command: --developer-mode=1 --overprovisioned=1 --smp=1
     volumes:
       - scylla-data:/var/lib/scylla
     networks:
@@ -16,10 +16,26 @@ services:
       retries: 10
       start_period: 30s
 
-  api:
+  scylla-init:
+    image: scylladb/scylla:5.4
     depends_on:
       scylla:
         condition: service_healthy
+    networks:
+      - gitstore-network
+    entrypoint: []
+    command: >
+      cqlsh scylla -e "
+        CREATE KEYSPACE IF NOT EXISTS gitstore
+          WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': '1'}
+          AND durable_writes = true;
+      "
+    restart: "no"
+
+  api:
+    depends_on:
+      scylla-init:
+        condition: service_completed_successfully
     environment:
       - GITSTORE_DATASTORE_BACKEND=scylla
       - GITSTORE_DATASTORE_SCYLLA_HOSTS=scylla:9042

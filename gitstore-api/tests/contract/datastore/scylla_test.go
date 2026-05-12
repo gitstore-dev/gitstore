@@ -10,6 +10,7 @@ package datastore_contract_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/gitstore-dev/gitstore/api/internal/config"
 	"github.com/gitstore-dev/gitstore/api/internal/datastore"
 	"github.com/gitstore-dev/gitstore/api/internal/datastore/scylla"
+	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,9 +52,31 @@ func TestMain(m *testing.M) {
 	port, _ := c.MappedPort(ctx, "9042")
 	scyllaContainerAddr = host + ":" + port.Port()
 
+	// Provision keyspace — mirrors the compose scylla-init service.
+	provisionKeyspace(scyllaContainerAddr, "gitstore")
+
 	code := m.Run()
 	_ = c.Terminate(ctx)
 	os.Exit(code)
+}
+
+func provisionKeyspace(addr, keyspace string) {
+	cluster := gocql.NewCluster(addr)
+	cluster.Consistency = gocql.Quorum
+	session, err := cluster.CreateSession()
+	if err != nil {
+		panic("provisionKeyspace: open session: " + err.Error())
+	}
+	defer session.Close()
+	stmt := fmt.Sprintf(
+		`CREATE KEYSPACE IF NOT EXISTS %s `+
+			`WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': '1'} `+
+			`AND durable_writes = true`,
+		keyspace,
+	)
+	if err := session.Query(stmt).Exec(); err != nil {
+		panic("provisionKeyspace: create keyspace: " + err.Error())
+	}
 }
 
 func newScyllaDatastore(t *testing.T) datastore.Datastore {

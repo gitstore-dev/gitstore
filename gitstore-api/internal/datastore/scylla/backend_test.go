@@ -7,6 +7,7 @@ package scylla_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/gitstore-dev/gitstore/api/internal/config"
 	"github.com/gitstore-dev/gitstore/api/internal/datastore"
 	"github.com/gitstore-dev/gitstore/api/internal/datastore/scylla"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,9 +51,33 @@ func TestMain(m *testing.M) {
 	port, _ := c.MappedPort(ctx, "9042")
 	scyllaAddr = host + ":" + port.Port()
 
+	// Provision keyspace — operator responsibility in production, init step in tests.
+	provisionKeyspace(scyllaAddr, "gitstore")
+
 	code := m.Run()
 	_ = c.Terminate(ctx)
 	os.Exit(code)
+}
+
+// provisionKeyspace creates the keyspace using a temporary no-keyspace session.
+// This mirrors what the compose scylla-init service does for local/CI stacks.
+func provisionKeyspace(addr, keyspace string) {
+	cluster := gocql.NewCluster(addr)
+	cluster.Consistency = gocql.Quorum
+	session, err := cluster.CreateSession()
+	if err != nil {
+		panic("provisionKeyspace: open session: " + err.Error())
+	}
+	defer session.Close()
+	stmt := fmt.Sprintf(
+		`CREATE KEYSPACE IF NOT EXISTS %s `+
+			`WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': '1'} `+
+			`AND durable_writes = true`,
+		keyspace,
+	)
+	if err := session.Query(stmt).Exec(); err != nil {
+		panic("provisionKeyspace: create keyspace: " + err.Error())
+	}
 }
 
 func newTestStore(t *testing.T) datastore.Datastore {

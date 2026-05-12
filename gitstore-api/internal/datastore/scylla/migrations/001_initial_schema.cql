@@ -1,12 +1,8 @@
 -- Migration 001: initial schema
--- Creates keyspace, entity tables, and the migration lock table.
+-- Assumes the keyspace already exists (provisioned by the operator / compose init).
 -- UUID fields use text for Go string compatibility; price uses double.
 
-CREATE KEYSPACE IF NOT EXISTS gitstore
-    WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': '1'}
-    AND durable_writes = true;
-
-CREATE TABLE IF NOT EXISTS gitstore.products (
+CREATE TABLE IF NOT EXISTS products (
     id                 text       PRIMARY KEY,
     sku                text,
     title              text,
@@ -23,7 +19,7 @@ CREATE TABLE IF NOT EXISTS gitstore.products (
     body               text
 );
 
-CREATE TABLE IF NOT EXISTS gitstore.categories (
+CREATE TABLE IF NOT EXISTS categories (
     id            text  PRIMARY KEY,
     name          text,
     slug          text,
@@ -34,7 +30,7 @@ CREATE TABLE IF NOT EXISTS gitstore.categories (
     body          text
 );
 
-CREATE TABLE IF NOT EXISTS gitstore.collections (
+CREATE TABLE IF NOT EXISTS collections (
     id            text  PRIMARY KEY,
     name          text,
     slug          text,
@@ -43,10 +39,4 @@ CREATE TABLE IF NOT EXISTS gitstore.collections (
     created_at    timestamp,
     updated_at    timestamp,
     body          text
-);
-
-CREATE TABLE IF NOT EXISTS gitstore.schema_migrations_lock (
-    lock_key    text PRIMARY KEY,
-    holder      text,
-    acquired_at timestamp
 );
