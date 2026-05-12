@@ -17,18 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// tablesAwaitedByMigration lists tables that must be fully initialised
-// before CREATE INDEX statements run in the same migration file.
-// On a single-node --developer-mode=1 ScyllaDB, schema agreement returns
-// immediately (the node trivially agrees with itself), but the table storage
-// engine may not be ready yet; we poll with a cheap SELECT COUNT(*) until it
-// responds without error.
-var tablesAwaitedByMigration = []string{
-	"gitstore.products",
-	"gitstore.categories",
-	"gitstore.collections",
-}
-
 //go:embed migrations/*.cql
 var migrationFiles embed.FS
 
@@ -43,7 +31,7 @@ const (
 // LWT lock, applies all pending CQL migrations via gocqlx/migrate, then
 // releases the lock. The session must already be scoped to the target keyspace.
 // instanceID should be a unique string per process (e.g. a UUID).
-func RunMigrations(ctx context.Context, rawSession *gocql.Session, instanceID string, log *zap.Logger) error {
+func RunMigrations(ctx context.Context, rawSession *gocql.Session, instanceID, keyspace string, log *zap.Logger) error {
 	if err := rawSession.Query(
 		`CREATE TABLE IF NOT EXISTS schema_migrations_lock ` +
 			`(lock_key text PRIMARY KEY, holder text, acquired_at timestamp)`,
@@ -79,7 +67,7 @@ func RunMigrations(ctx context.Context, rawSession *gocql.Session, instanceID st
 	// immediately, but the storage engine for new tables may not be ready;
 	// we poll until a harmless SELECT succeeds on every table in the list.
 	reg := migrate.CallbackRegister{}
-	reg.Add(migrate.CallComment, "await_tables", awaitTablesCallback(rawSession, log))
+	reg.Add(migrate.CallComment, "await_tables", awaitTablesCallback(rawSession, keyspace, log))
 	migrate.Callback = reg.Callback
 
 	session := gocqlx.NewSession(rawSession)
@@ -134,18 +122,22 @@ func acquireLock(session *gocql.Session, instanceID string) (bool, error) {
 	return applied, err
 }
 
-// awaitTablesCallback returns a migrate.CallbackFunc that polls each table in
-// tablesAwaitedByMigration with a SELECT COUNT(*) until all of them respond
-// without an error. This is needed because on single-node --developer-mode=1
-// ScyllaDB, AwaitSchemaAgreement returns immediately while the storage engine
-// is still initialising the new tables.
-func awaitTablesCallback(session *gocql.Session, log *zap.Logger) migrate.CallbackFunc {
+// awaitTablesCallback returns a migrate.CallbackFunc that polls each core table
+// with a SELECT COUNT(*) until all of them respond without an error.
+// On single-node --developer-mode=1 ScyllaDB, AwaitSchemaAgreement returns
+// immediately while the storage engine is still initialising new tables.
+func awaitTablesCallback(session *gocql.Session, keyspace string, log *zap.Logger) migrate.CallbackFunc {
+	tables := []string{
+		keyspace + ".products",
+		keyspace + ".categories",
+		keyspace + ".collections",
+	}
 	return func(ctx context.Context, _ gocqlx.Session, ev migrate.CallbackEvent, _ string) error {
 		if ev != migrate.CallComment {
 			return nil
 		}
 		deadline := time.Now().Add(30 * time.Second)
-		for _, tbl := range tablesAwaitedByMigration {
+		for _, tbl := range tables {
 			for {
 				var count int
 				err := session.Query("SELECT COUNT(*) FROM " + tbl).

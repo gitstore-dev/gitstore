@@ -5,6 +5,7 @@ package scylla
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -23,41 +24,13 @@ import (
 
 // scyllaDatastore implements datastore.Datastore backed by ScyllaDB.
 type scyllaDatastore struct {
-	session gocqlx.Session
-	log     *zap.Logger
+	session         gocqlx.Session
+	log             *zap.Logger
+	keyspace        string
+	productTable    *table.Table
+	categoryTable   *table.Table
+	collectionTable *table.Table
 }
-
-// table metadata — column lists must match the CQL schema exactly.
-var (
-	productTable = table.New(table.Metadata{
-		Name: "gitstore.products",
-		Columns: []string{
-			"id", "sku", "title", "price", "currency",
-			"inventory_status", "inventory_quantity",
-			"category_id", "collection_ids", "images",
-			"metadata", "created_at", "updated_at", "body",
-		},
-		PartKey: []string{"id"},
-	})
-
-	categoryTable = table.New(table.Metadata{
-		Name: "gitstore.categories",
-		Columns: []string{
-			"id", "name", "slug", "parent_id",
-			"display_order", "created_at", "updated_at", "body",
-		},
-		PartKey: []string{"id"},
-	})
-
-	collectionTable = table.New(table.Metadata{
-		Name: "gitstore.collections",
-		Columns: []string{
-			"id", "name", "slug", "display_order",
-			"product_ids", "created_at", "updated_at", "body",
-		},
-		PartKey: []string{"id"},
-	})
-)
 
 // row structs mirror the CQL columns.
 
@@ -124,14 +97,42 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 	}
 
 	instanceID := uuid.New().String()
-	if err := RunMigrations(context.Background(), rawSession, instanceID, log); err != nil {
+	if err := RunMigrations(context.Background(), rawSession, instanceID, cfg.Keyspace, log); err != nil {
 		rawSession.Close()
 		return nil, fmt.Errorf("scylla: migrations: %w", err)
 	}
 
+	ks := cfg.Keyspace
 	return &scyllaDatastore{
-		session: gocqlx.NewSession(rawSession),
-		log:     log,
+		session:  gocqlx.NewSession(rawSession),
+		log:      log,
+		keyspace: ks,
+		productTable: table.New(table.Metadata{
+			Name: ks + ".products",
+			Columns: []string{
+				"id", "sku", "title", "price", "currency",
+				"inventory_status", "inventory_quantity",
+				"category_id", "collection_ids", "images",
+				"metadata", "created_at", "updated_at", "body",
+			},
+			PartKey: []string{"id"},
+		}),
+		categoryTable: table.New(table.Metadata{
+			Name: ks + ".categories",
+			Columns: []string{
+				"id", "name", "slug", "parent_id",
+				"display_order", "created_at", "updated_at", "body",
+			},
+			PartKey: []string{"id"},
+		}),
+		collectionTable: table.New(table.Metadata{
+			Name: ks + ".collections",
+			Columns: []string{
+				"id", "name", "slug", "display_order",
+				"product_ids", "created_at", "updated_at", "body",
+			},
+			PartKey: []string{"id"},
+		}),
 	}, nil
 }
 
@@ -172,7 +173,7 @@ func (s *scyllaDatastore) CreateProduct(ctx context.Context, p *datastore.Produc
 		return fmt.Errorf("%w: product sku %s", datastore.ErrAlreadyExists, p.SKU)
 	}
 	row := toProductRow(p)
-	stmt, names := productTable.Insert()
+	stmt, names := s.productTable.Insert()
 	if err := s.session.Query(stmt, names).BindStruct(row).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: create product: %w", err)
 	}
@@ -181,21 +182,27 @@ func (s *scyllaDatastore) CreateProduct(ctx context.Context, p *datastore.Produc
 
 func (s *scyllaDatastore) GetProduct(_ context.Context, id string) (*datastore.Product, error) {
 	var row productRow
-	stmt, names := productTable.Get()
+	stmt, names := s.productTable.Get()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: product id %s", datastore.ErrNotFound, id)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: product id %s", datastore.ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("scylla: get product: %w", err)
 	}
 	return fromProductRow(&row), nil
 }
 
 func (s *scyllaDatastore) GetProductBySKU(_ context.Context, sku string) (*datastore.Product, error) {
-	stmt, names := qb.Select("gitstore.products").
-		Columns(productTable.Metadata().Columns...).
+	stmt, names := qb.Select(s.keyspace + ".products").
+		Columns(s.productTable.Metadata().Columns...).
 		Where(qb.Eq("sku")).
 		ToCql()
 	var row productRow
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"sku": sku}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: product sku %s", datastore.ErrNotFound, sku)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: product sku %s", datastore.ErrNotFound, sku)
+		}
+		return nil, fmt.Errorf("scylla: get product by sku: %w", err)
 	}
 	return fromProductRow(&row), nil
 }
@@ -206,14 +213,14 @@ func (s *scyllaDatastore) ListProducts(_ context.Context, filter datastore.Produ
 	var bindMap qb.M
 
 	if filter.CategoryID != "" {
-		stmt, names = qb.Select("gitstore.products").
-			Columns(productTable.Metadata().Columns...).
+		stmt, names = qb.Select(s.keyspace + ".products").
+			Columns(s.productTable.Metadata().Columns...).
 			Where(qb.Eq("category_id")).
 			ToCql()
 		bindMap = qb.M{"category_id": filter.CategoryID}
 	} else {
-		stmt, names = qb.Select("gitstore.products").
-			Columns(productTable.Metadata().Columns...).
+		stmt, names = qb.Select(s.keyspace + ".products").
+			Columns(s.productTable.Metadata().Columns...).
 			ToCql()
 		bindMap = qb.M{}
 	}
@@ -231,10 +238,10 @@ func (s *scyllaDatastore) ListProducts(_ context.Context, filter datastore.Produ
 
 func (s *scyllaDatastore) UpdateProduct(ctx context.Context, p *datastore.Product) error {
 	if _, err := s.GetProduct(ctx, p.ID); err != nil {
-		return fmt.Errorf("%w: product id %s", datastore.ErrNotFound, p.ID)
+		return err
 	}
 	row := toProductRow(p)
-	stmt, names := productTable.Update(
+	stmt, names := s.productTable.Update(
 		"sku", "title", "price", "currency",
 		"inventory_status", "inventory_quantity",
 		"category_id", "collection_ids", "images",
@@ -248,9 +255,9 @@ func (s *scyllaDatastore) UpdateProduct(ctx context.Context, p *datastore.Produc
 
 func (s *scyllaDatastore) DeleteProduct(ctx context.Context, id string) error {
 	if _, err := s.GetProduct(ctx, id); err != nil {
-		return fmt.Errorf("%w: product id %s", datastore.ErrNotFound, id)
+		return err
 	}
-	stmt, names := productTable.Delete()
+	stmt, names := s.productTable.Delete()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: delete product: %w", err)
 	}
@@ -267,7 +274,7 @@ func (s *scyllaDatastore) CreateCategory(ctx context.Context, c *datastore.Categ
 		return fmt.Errorf("%w: category slug %s", datastore.ErrAlreadyExists, c.Slug)
 	}
 	row := toCategoryRow(c)
-	stmt, names := categoryTable.Insert()
+	stmt, names := s.categoryTable.Insert()
 	if err := s.session.Query(stmt, names).BindStruct(row).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: create category: %w", err)
 	}
@@ -276,28 +283,34 @@ func (s *scyllaDatastore) CreateCategory(ctx context.Context, c *datastore.Categ
 
 func (s *scyllaDatastore) GetCategory(_ context.Context, id string) (*datastore.Category, error) {
 	var row categoryRow
-	stmt, names := categoryTable.Get()
+	stmt, names := s.categoryTable.Get()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: category id %s", datastore.ErrNotFound, id)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: category id %s", datastore.ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("scylla: get category: %w", err)
 	}
 	return fromCategoryRow(&row), nil
 }
 
 func (s *scyllaDatastore) GetCategoryBySlug(_ context.Context, slug string) (*datastore.Category, error) {
-	stmt, names := qb.Select("gitstore.categories").
-		Columns(categoryTable.Metadata().Columns...).
+	stmt, names := qb.Select(s.keyspace + ".categories").
+		Columns(s.categoryTable.Metadata().Columns...).
 		Where(qb.Eq("slug")).
 		ToCql()
 	var row categoryRow
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"slug": slug}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: category slug %s", datastore.ErrNotFound, slug)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: category slug %s", datastore.ErrNotFound, slug)
+		}
+		return nil, fmt.Errorf("scylla: get category by slug: %w", err)
 	}
 	return fromCategoryRow(&row), nil
 }
 
 func (s *scyllaDatastore) ListCategories(_ context.Context) ([]*datastore.Category, error) {
-	stmt, names := qb.Select("gitstore.categories").
-		Columns(categoryTable.Metadata().Columns...).
+	stmt, names := qb.Select(s.keyspace + ".categories").
+		Columns(s.categoryTable.Metadata().Columns...).
 		ToCql()
 	var rows []categoryRow
 	if err := s.session.Query(stmt, names).SelectRelease(&rows); err != nil {
@@ -312,10 +325,10 @@ func (s *scyllaDatastore) ListCategories(_ context.Context) ([]*datastore.Catego
 
 func (s *scyllaDatastore) UpdateCategory(ctx context.Context, c *datastore.Category) error {
 	if _, err := s.GetCategory(ctx, c.ID); err != nil {
-		return fmt.Errorf("%w: category id %s", datastore.ErrNotFound, c.ID)
+		return err
 	}
 	row := toCategoryRow(c)
-	stmt, names := categoryTable.Update(
+	stmt, names := s.categoryTable.Update(
 		"name", "slug", "parent_id", "display_order",
 		"created_at", "updated_at", "body",
 	)
@@ -327,9 +340,9 @@ func (s *scyllaDatastore) UpdateCategory(ctx context.Context, c *datastore.Categ
 
 func (s *scyllaDatastore) DeleteCategory(ctx context.Context, id string) error {
 	if _, err := s.GetCategory(ctx, id); err != nil {
-		return fmt.Errorf("%w: category id %s", datastore.ErrNotFound, id)
+		return err
 	}
-	stmt, names := categoryTable.Delete()
+	stmt, names := s.categoryTable.Delete()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: delete category: %w", err)
 	}
@@ -346,7 +359,7 @@ func (s *scyllaDatastore) CreateCollection(ctx context.Context, c *datastore.Col
 		return fmt.Errorf("%w: collection slug %s", datastore.ErrAlreadyExists, c.Slug)
 	}
 	row := toCollectionRow(c)
-	stmt, names := collectionTable.Insert()
+	stmt, names := s.collectionTable.Insert()
 	if err := s.session.Query(stmt, names).BindStruct(row).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: create collection: %w", err)
 	}
@@ -355,28 +368,34 @@ func (s *scyllaDatastore) CreateCollection(ctx context.Context, c *datastore.Col
 
 func (s *scyllaDatastore) GetCollection(_ context.Context, id string) (*datastore.Collection, error) {
 	var row collectionRow
-	stmt, names := collectionTable.Get()
+	stmt, names := s.collectionTable.Get()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: collection id %s", datastore.ErrNotFound, id)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: collection id %s", datastore.ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("scylla: get collection: %w", err)
 	}
 	return fromCollectionRow(&row), nil
 }
 
 func (s *scyllaDatastore) GetCollectionBySlug(_ context.Context, slug string) (*datastore.Collection, error) {
-	stmt, names := qb.Select("gitstore.collections").
-		Columns(collectionTable.Metadata().Columns...).
+	stmt, names := qb.Select(s.keyspace + ".collections").
+		Columns(s.collectionTable.Metadata().Columns...).
 		Where(qb.Eq("slug")).
 		ToCql()
 	var row collectionRow
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"slug": slug}).GetRelease(&row); err != nil {
-		return nil, fmt.Errorf("%w: collection slug %s", datastore.ErrNotFound, slug)
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: collection slug %s", datastore.ErrNotFound, slug)
+		}
+		return nil, fmt.Errorf("scylla: get collection by slug: %w", err)
 	}
 	return fromCollectionRow(&row), nil
 }
 
 func (s *scyllaDatastore) ListCollections(_ context.Context) ([]*datastore.Collection, error) {
-	stmt, names := qb.Select("gitstore.collections").
-		Columns(collectionTable.Metadata().Columns...).
+	stmt, names := qb.Select(s.keyspace + ".collections").
+		Columns(s.collectionTable.Metadata().Columns...).
 		ToCql()
 	var rows []collectionRow
 	if err := s.session.Query(stmt, names).SelectRelease(&rows); err != nil {
@@ -391,10 +410,10 @@ func (s *scyllaDatastore) ListCollections(_ context.Context) ([]*datastore.Colle
 
 func (s *scyllaDatastore) UpdateCollection(ctx context.Context, c *datastore.Collection) error {
 	if _, err := s.GetCollection(ctx, c.ID); err != nil {
-		return fmt.Errorf("%w: collection id %s", datastore.ErrNotFound, c.ID)
+		return err
 	}
 	row := toCollectionRow(c)
-	stmt, names := collectionTable.Update(
+	stmt, names := s.collectionTable.Update(
 		"name", "slug", "display_order", "product_ids",
 		"created_at", "updated_at", "body",
 	)
@@ -406,9 +425,9 @@ func (s *scyllaDatastore) UpdateCollection(ctx context.Context, c *datastore.Col
 
 func (s *scyllaDatastore) DeleteCollection(ctx context.Context, id string) error {
 	if _, err := s.GetCollection(ctx, id); err != nil {
-		return fmt.Errorf("%w: collection id %s", datastore.ErrNotFound, id)
+		return err
 	}
-	stmt, names := collectionTable.Delete()
+	stmt, names := s.collectionTable.Delete()
 	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).ExecRelease(); err != nil {
 		return fmt.Errorf("scylla: delete collection: %w", err)
 	}

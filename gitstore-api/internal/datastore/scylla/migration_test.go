@@ -46,7 +46,7 @@ func TestRunMigrations_AppliesSchema(t *testing.T) {
 	session := newRawSession(t)
 	log := zap.NewNop()
 
-	err := scylla.RunMigrations(context.Background(), session, uuid.New().String(), log)
+	err := scylla.RunMigrations(context.Background(), session, uuid.New().String(), "gitstore", log)
 	require.NoError(t, err)
 
 	// Verify keyspace exists.
@@ -72,8 +72,8 @@ func TestRunMigrations_Idempotent(t *testing.T) {
 	ctx := context.Background()
 
 	// Running migrations twice must not return an error.
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), log))
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), "gitstore", log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), "gitstore", log))
 }
 
 func TestRunMigrations_LockReleasedAfterSuccess(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRunMigrations_LockReleasedAfterSuccess(t *testing.T) {
 	log := zap.NewNop()
 	ctx := context.Background()
 
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), "gitstore", log))
 
 	// After success the lock row must be gone (deleted by releaseLock).
 	var holder string
