@@ -99,25 +99,39 @@ type collectionRow struct {
 
 // New opens a ScyllaDB connection, runs pending migrations, and returns a Datastore.
 func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) {
-	cluster := gocql.NewCluster(parseHosts(cfg.Hosts)...)
-	cluster.Keyspace = cfg.Keyspace
+	hosts := parseHosts(cfg.Hosts)
+	auth := gocql.PasswordAuthenticator{}
 	if cfg.Username != "" {
-		cluster.Authenticator = gocql.PasswordAuthenticator{
-			Username: cfg.Username,
-			Password: cfg.Password,
-		}
+		auth = gocql.PasswordAuthenticator{Username: cfg.Username, Password: cfg.Password}
 	}
-	cluster.Consistency = gocql.Quorum
 
-	rawSession, err := cluster.CreateSession()
+	// Phase 1: connect without a keyspace so migrations can CREATE KEYSPACE.
+	migrCluster := gocql.NewCluster(hosts...)
+	migrCluster.Consistency = gocql.Quorum
+	if cfg.Username != "" {
+		migrCluster.Authenticator = auth
+	}
+	migrSession, err := migrCluster.CreateSession()
 	if err != nil {
-		return nil, fmt.Errorf("scylla: open session: %w", err)
+		return nil, fmt.Errorf("scylla: open migration session: %w", err)
 	}
-
 	instanceID := uuid.New().String()
-	if err := RunMigrations(context.Background(), rawSession, instanceID, log); err != nil {
-		rawSession.Close()
+	if err := RunMigrations(context.Background(), migrSession, instanceID, log); err != nil {
+		migrSession.Close()
 		return nil, fmt.Errorf("scylla: migrations: %w", err)
+	}
+	migrSession.Close()
+
+	// Phase 2: open a keyspace-scoped session for all data operations.
+	dataCluster := gocql.NewCluster(hosts...)
+	dataCluster.Keyspace = cfg.Keyspace
+	dataCluster.Consistency = gocql.Quorum
+	if cfg.Username != "" {
+		dataCluster.Authenticator = auth
+	}
+	rawSession, err := dataCluster.CreateSession()
+	if err != nil {
+		return nil, fmt.Errorf("scylla: open data session: %w", err)
 	}
 
 	return &scyllaDatastore{

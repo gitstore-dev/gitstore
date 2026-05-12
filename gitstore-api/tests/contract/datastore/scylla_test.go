@@ -4,11 +4,13 @@
 //go:build scylla
 
 // Wires the contract suite against the ScyllaDB backend using testcontainers.
+// A single container is started in TestMain and shared across all tests.
 
 package datastore_contract_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -21,13 +23,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func newScyllaDatastore(t *testing.T) datastore.Datastore {
-	t.Helper()
+// scyllaContainerAddr is set by TestMain before any test runs.
+var scyllaContainerAddr string
+
+func TestMain(m *testing.M) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "scylladb/scylla:5.4",
 		ExposedPorts: []string{"9042/tcp"},
-		Cmd:          []string{"--developer-mode=1", "--overprovisioned=1"},
+		Cmd:          []string{"--developer-mode=1", "--overprovisioned=1", "--smp=1"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("9042/tcp"),
 			wait.ForLog("Starting listening for CQL clients").
@@ -38,16 +42,23 @@ func newScyllaDatastore(t *testing.T) datastore.Datastore {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = c.Terminate(ctx) })
+	if err != nil {
+		panic("failed to start ScyllaDB container: " + err.Error())
+	}
 
-	host, err := c.Host(ctx)
-	require.NoError(t, err)
-	port, err := c.MappedPort(ctx, "9042")
-	require.NoError(t, err)
+	host, _ := c.Host(ctx)
+	port, _ := c.MappedPort(ctx, "9042")
+	scyllaContainerAddr = host + ":" + port.Port()
 
+	code := m.Run()
+	_ = c.Terminate(ctx)
+	os.Exit(code)
+}
+
+func newScyllaDatastore(t *testing.T) datastore.Datastore {
+	t.Helper()
 	cfg := config.ScyllaConfig{
-		Hosts:    []string{host + ":" + port.Port()},
+		Hosts:    []string{scyllaContainerAddr},
 		Keyspace: "gitstore",
 	}
 	store, err := scylla.New(cfg, zap.NewNop())

@@ -5,47 +5,23 @@
 
 package scylla_test
 
+// migration_test.go shares the TestMain / scyllaAddr from backend_test.go.
+
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/gitstore-dev/gitstore/api/internal/datastore/scylla"
 	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 )
 
 func newRawSession(t *testing.T) *gocql.Session {
 	t.Helper()
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "scylladb/scylla:5.4",
-		ExposedPorts: []string{"9042/tcp"},
-		Cmd:          []string{"--developer-mode=1", "--overprovisioned=1"},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort("9042/tcp"),
-			wait.ForLog("Starting listening for CQL clients").
-				WithStartupTimeout(120*time.Second),
-		),
-	}
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = c.Terminate(ctx) })
-
-	host, err := c.Host(ctx)
-	require.NoError(t, err)
-	port, err := c.MappedPort(ctx, "9042")
-	require.NoError(t, err)
-
-	cluster := gocql.NewCluster(host + ":" + port.Port())
+	cluster := gocql.NewCluster(scyllaAddr)
 	cluster.Consistency = gocql.Quorum
 	session, err := cluster.CreateSession()
 	require.NoError(t, err)
