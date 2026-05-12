@@ -433,7 +433,9 @@ mod tests {
         // Both failures should appear in the single error string
         let s = err.to_string();
         assert!(
-            s.contains("http.port") || s.contains("git.data_dir") || s.contains("git.repo.max_file_size"),
+            s.contains("http.port")
+                || s.contains("git.data_dir")
+                || s.contains("git.repo.max_file_size"),
             "got: {s}"
         );
         clear_env();
