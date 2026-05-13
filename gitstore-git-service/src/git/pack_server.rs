@@ -250,8 +250,17 @@ fn write_ref_advertisement(out: &mut Vec<u8>, refs: &[(String, String)], caps: &
 }
 
 /// Collect all refs from the repository as sorted (full-name, hex-oid) pairs.
+///
+/// HEAD is always included explicitly: `platform.all()` does not iterate HEAD
+/// on all platforms (notably Linux gix builds omit it), so we add it directly.
 fn collect_refs(repo: &gix::Repository) -> Result<Vec<(String, String)>> {
     let mut refs: Vec<(String, String)> = Vec::new();
+
+    // Explicitly resolve HEAD first so it always appears in the advertisement.
+    if let Ok(head_id) = repo.head_id() {
+        refs.push(("HEAD".to_string(), head_id.to_string()));
+    }
+
     let platform = repo.references().context("access references")?;
     let all = platform.all().context("iterate references")?;
 
@@ -261,6 +270,9 @@ fn collect_refs(repo: &gix::Repository) -> Result<Vec<(String, String)>> {
             Err(_) => continue,
         };
         let name = reference.name().as_bstr().to_string();
+        if name == "HEAD" {
+            continue; // already added above
+        }
         let oid = match reference.target() {
             TargetRef::Object(id) => id.to_string(),
             TargetRef::Symbolic(_) => match repo.find_reference(reference.name().as_bstr()) {
