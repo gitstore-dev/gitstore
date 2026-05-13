@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 GitStore contributors
 
+use std::io::Write;
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::sync::atomic::AtomicBool;
 use std::time::Instant;
 
@@ -114,6 +116,8 @@ impl HttpPackServer {
             None
         };
 
+        run_pre_receive_hook(&self.repo_path, &ref_updates).context("running pre-receive hook")?;
+
         // Build atomic ref transaction
         let mut ref_edits: Vec<RefEdit> = Vec::new();
         for (refname, old_oid, new_oid) in &ref_updates {
@@ -128,8 +132,13 @@ impl HttpPackServer {
                 PreviousValue::MustExistAndMatch(gix::refs::Target::Object(old_id))
             };
 
-            ref_edits.push(RefEdit {
-                change: Change::Update {
+            let change = if new_id.is_null() {
+                Change::Delete {
+                    expected: previous_value,
+                    log: RefLog::AndReference,
+                }
+            } else {
+                Change::Update {
                     log: LogChange {
                         mode: RefLog::AndReference,
                         force_create_reflog: false,
@@ -137,7 +146,11 @@ impl HttpPackServer {
                     },
                     expected: previous_value,
                     new: gix::refs::Target::Object(new_id),
-                },
+                }
+            };
+
+            ref_edits.push(RefEdit {
+                change,
                 name: refname
                     .as_str()
                     .try_into()
@@ -145,6 +158,8 @@ impl HttpPackServer {
                 deref: false,
             });
         }
+
+        run_update_hooks(&self.repo_path, &ref_updates).context("running update hook")?;
 
         // Commit atomically — gix uses lock files; any failure rolls back
         if !ref_edits.is_empty() {
@@ -159,6 +174,9 @@ impl HttpPackServer {
         if let Some(q) = quarantine {
             promote_quarantine(&repo, q).context("promoting quarantined pack to ODB")?;
         }
+
+        run_post_receive_hook(&self.repo_path, &ref_updates)
+            .context("running post-receive hook")?;
 
         // Build report-status response.
         // With side-band-64k: ALL report-status pkt-lines are bundled into ONE sideband
@@ -187,6 +205,73 @@ impl HttpPackServer {
         );
         Ok(response)
     }
+}
+
+fn run_pre_receive_hook(
+    repo_path: &std::path::Path,
+    ref_updates: &[(String, String, String)],
+) -> Result<()> {
+    let hook_path = repo_path.join("hooks/pre-receive");
+    run_hook_with_stdin(&hook_path, &hook_stdin(ref_updates))
+}
+
+fn run_update_hooks(
+    repo_path: &std::path::Path,
+    ref_updates: &[(String, String, String)],
+) -> Result<()> {
+    let hook_path = repo_path.join("hooks/update");
+    for (refname, old_oid, new_oid) in ref_updates {
+        run_hook(&hook_path, &[refname, old_oid, new_oid])?;
+    }
+    Ok(())
+}
+
+fn run_post_receive_hook(
+    repo_path: &std::path::Path,
+    ref_updates: &[(String, String, String)],
+) -> Result<()> {
+    let hook_path = repo_path.join("hooks/post-receive");
+    run_hook_with_stdin(&hook_path, &hook_stdin(ref_updates))
+}
+
+fn hook_stdin(ref_updates: &[(String, String, String)]) -> Vec<u8> {
+    let mut stdin = Vec::new();
+    for (refname, old_oid, new_oid) in ref_updates {
+        let _ = writeln!(&mut stdin, "{} {} {}", old_oid, new_oid, refname);
+    }
+    stdin
+}
+
+fn run_hook(hook_path: &std::path::Path, args: &[&str]) -> Result<()> {
+    if !hook_path.is_file() {
+        return Ok(());
+    }
+    let status = Command::new(hook_path)
+        .args(args)
+        .status()
+        .with_context(|| format!("exec hook {}", hook_path.display()))?;
+    anyhow::ensure!(status.success(), "hook failed: {}", hook_path.display());
+    Ok(())
+}
+
+fn run_hook_with_stdin(hook_path: &std::path::Path, stdin_data: &[u8]) -> Result<()> {
+    if !hook_path.is_file() {
+        return Ok(());
+    }
+    let mut child = Command::new(hook_path)
+        .stdin(Stdio::piped())
+        .spawn()
+        .with_context(|| format!("spawn hook {}", hook_path.display()))?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(stdin_data)
+            .with_context(|| format!("write hook stdin {}", hook_path.display()))?;
+    }
+    let status = child
+        .wait()
+        .with_context(|| format!("wait hook {}", hook_path.display()))?;
+    anyhow::ensure!(status.success(), "hook failed: {}", hook_path.display());
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
