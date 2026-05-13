@@ -40,6 +40,25 @@ fn validate_repo_name(name: &str) -> Result<(), StatusCode> {
     Ok(())
 }
 
+/// Build a canonicalized path for `repo` inside `data_root` and verify that it
+/// stays within `data_root` (prevents path-traversal / injection).
+///
+/// The directory must already exist; `canonicalize` follows symlinks and
+/// resolves `.` / `..`, so any attempt to escape the root is caught here.
+fn confine_repo_path(data_root: &StdPath, repo: &str) -> Result<PathBuf, GitError> {
+    let candidate = data_root.join(format!("{}.git", repo));
+    let canonical = candidate
+        .canonicalize()
+        .map_err(|_| GitError::NotFound(format!("repository '{}' not found", repo)))?;
+    let root = data_root
+        .canonicalize()
+        .map_err(|e| GitError::Internal(format!("data root inaccessible: {}", e)))?;
+    if !canonical.starts_with(&root) {
+        return Err(GitError::NotFound("invalid repository name".into()));
+    }
+    Ok(canonical)
+}
+
 /// Create HTTP git server routes
 pub fn create_git_routes(state: GitServerState) -> Router {
     Router::new()
@@ -71,7 +90,7 @@ async fn info_refs(
     validate_repo_name(&repo).map_err(|_| GitError::NotFound("invalid repository name".into()))?;
 
     let service = query.service.as_deref().unwrap_or("");
-    let repo_path = state.data_root.join(format!("{}.git", repo));
+    let repo_path = confine_repo_path(&state.data_root, &repo)?;
 
     // Validate the repo exists
     gix::open(&repo_path)
@@ -158,7 +177,7 @@ async fn upload_pack(
     debug!(repo = %repo, "upload_pack request");
 
     validate_repo_name(&repo).map_err(|_| GitError::NotFound("invalid repository name".into()))?;
-    let repo_path = state.data_root.join(format!("{}.git", repo));
+    let repo_path = confine_repo_path(&state.data_root, &repo)?;
 
     let mut output = std::process::Command::new("git")
         .args([
@@ -200,7 +219,7 @@ async fn receive_pack(
     info!(repo = %repo, "receive_pack request (git push)");
 
     validate_repo_name(&repo).map_err(|_| GitError::NotFound("invalid repository name".into()))?;
-    let repo_path = state.data_root.join(format!("{}.git", repo));
+    let repo_path = confine_repo_path(&state.data_root, &repo)?;
 
     // Validate repository exists before spawning git-receive-pack
     gix::open(&repo_path)

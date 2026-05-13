@@ -835,7 +835,13 @@ fn find_blob_in_tree(
             let oid = gix::ObjectId::from(entry.oid);
             return match rest {
                 Some(remaining) => find_blob_in_tree(repo, oid, remaining),
-                None => Ok(oid),
+                None => {
+                    use gix::object::tree::EntryKind;
+                    match entry.mode.kind() {
+                        EntryKind::Blob | EntryKind::BlobExecutable => Ok(oid),
+                        _ => Err(Status::not_found(format!("'{}' is not a file", path))),
+                    }
+                }
             };
         }
     }
