@@ -95,6 +95,7 @@ fn validate_file_path(path: &str) -> Result<(), Status> {
 }
 
 /// Resolve a ref to a gix commit (returned as ObjectId so it is not bound to repo lifetime).
+/// Annotated tags are peeled to their target commit before conversion.
 fn resolve_ref_to_commit_id(
     repo: &gix::Repository,
     ref_str: &str,
@@ -104,6 +105,8 @@ fn resolve_ref_to_commit_id(
         .map_err(|e| Status::not_found(format!("ref '{}' not found: {}", ref_str, e)))?;
     let commit = id
         .object()
+        .map_err(|e| Status::internal(e.to_string()))?
+        .peel_tags_to_end()
         .map_err(|e| Status::internal(e.to_string()))?
         .try_into_commit()
         .map_err(|_| Status::internal(format!("ref '{}' is not a commit", ref_str)))?;
