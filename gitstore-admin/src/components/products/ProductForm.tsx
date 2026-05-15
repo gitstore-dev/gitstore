@@ -431,28 +431,20 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading = false }: 
             {formData.images.map((image, index) => {
               const safeImageUrl = sanitizeImageUrl(image);
               return (
-              <div key={index} style={styles.imageItem}>
-                <img src={safeImageUrl ?? ''} alt={`Product ${index + 1}`} style={styles.imageThumb} loading="lazy" referrerPolicy="no-referrer" />
-                <div style={styles.imageUrl}>{image}</div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  style={styles.removeButton}
-                  disabled={isLoading}
-                >
-                  Remove
-                </button>
-              </div>
-            )})}
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  style={styles.removeButton}
-                  disabled={isLoading}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
+                <div key={index} style={styles.imageItem}>
+                  <img src={safeImageUrl ?? ''} alt={`Product ${index + 1}`} style={styles.imageThumb} loading="lazy" referrerPolicy="no-referrer" />
+                  <div style={styles.imageUrl}>{image}</div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    style={styles.removeButton}
+                    disabled={isLoading}
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
