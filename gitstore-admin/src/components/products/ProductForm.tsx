@@ -52,6 +52,18 @@ const INVENTORY_STATUSES = [
  * Handles all product fields including title, SKU, price, category, collections
  */
 export function ProductForm({ product, onSubmit, onCancel, isLoading = false }: ProductFormProps) {
+  const sanitizeImageUrl = (raw: string): string | null => {
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.toString();
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const [formData, setFormData] = useState<Product>({
     title: '',
     sku: '',
@@ -119,10 +131,11 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading = false }: 
   };
 
   const handleAddImage = () => {
-    if (imageInput.trim()) {
+    const sanitizedImageUrl = sanitizeImageUrl(imageInput.trim());
+    if (sanitizedImageUrl) {
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, imageInput.trim()],
+        images: [...prev.images, sanitizedImageUrl],
       }));
       setImageInput('');
     }
@@ -415,11 +428,22 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading = false }: 
 
         {formData.images.length > 0 && (
           <div style={styles.imageList}>
-            {formData.images.map((image, index) => (
+            {formData.images.map((image, index) => {
+              const safeImageUrl = sanitizeImageUrl(image);
+              return (
               <div key={index} style={styles.imageItem}>
-                <img src={image} alt={`Product ${index + 1}`} style={styles.imageThumb} />
+                <img src={safeImageUrl ?? ''} alt={`Product ${index + 1}`} style={styles.imageThumb} loading="lazy" referrerPolicy="no-referrer" />
                 <div style={styles.imageUrl}>{image}</div>
                 <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  style={styles.removeButton}
+                  disabled={isLoading}
+                >
+                  Remove
+                </button>
+              </div>
+            )})}
                   type="button"
                   onClick={() => handleRemoveImage(index)}
                   style={styles.removeButton}
