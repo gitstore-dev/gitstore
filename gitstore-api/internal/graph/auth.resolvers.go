@@ -8,13 +8,58 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/gitstore-dev/gitstore/api/internal/config"
 	"github.com/gitstore-dev/gitstore/api/internal/graph/model"
+	"github.com/gitstore-dev/gitstore/api/internal/logger"
+	"github.com/gitstore-dev/gitstore/api/internal/middleware"
+	"go.uber.org/zap"
 )
 
+var cfg, _ = config.Load()
+
 // Login is the resolver for the login field.
+// TODO cleanup
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginPayload, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+	authMiddleware, err := middleware.NewAuthMiddleware(
+		cfg.Auth.Admin.Username,
+		cfg.Auth.Admin.Password,
+		cfg.Auth.JWT.Secret,
+		cfg.Auth.JWT.Duration,
+		cfg.Auth.JWT.Issuer,
+	)
+	log := logger.Log
+	if err != nil {
+		log.Fatal("Failed to create auth middleware", zap.Error(err))
+	}
+
+	if !authMiddleware.ValidateCredentials(input.Username, input.Password) {
+		log.Debug("Invalid credentials",
+			zap.String("username", input.Username),
+		)
+		return nil, fmt.Errorf("invalid username or password")
+	}
+
+	token, err := authMiddleware.GenerateSessionToken(input.Username, true)
+	if err != nil {
+		log.Error("Failed to generate session token",
+			zap.Error(err),
+		)
+		return nil, fmt.Errorf("internal server error")
+	}
+	expiresAt := time.Now().Add(24 * time.Hour)
+	return &model.LoginPayload{
+		ClientMutationID: input.ClientMutationID,
+		Session: &model.AuthSession{
+			Token:     token,
+			ExpiresAt: expiresAt,
+			User: &model.User{
+				Username: input.Username,
+				IsAdmin:  true,
+			},
+		},
+	}, nil
 }
 
 // Logout is the resolver for the logout field.

@@ -8,7 +8,7 @@
 
 **Decision**: Expose namespace CRUD exclusively as GraphQL mutations and queries.
 
-**Rationale**: The entire domain API surface is GraphQL. The `gqlgen.yml` uses `follow-schema` layout with `../shared/schemas/*.graphql` — adding a `namespace.graphql` file and running `go generate` is the complete tooling cost. The Relay-compliant pattern (Node interface, Connection pagination, Input/Payload mutation shape) is already established for products, categories, and collections. Namespace operations are authenticated — they belong behind the existing context-based auth chain rather than a separate REST route.
+**Rationale**: The entire domain API surface is GraphQL. The `gqlgen.yml` uses `follow-schema` layout with `../shared/schemas/*.graphqls` — adding a `namespace.graphqls` file and running `go generate` is the complete tooling cost. The Relay-compliant pattern (Node interface, Connection pagination, Input/Payload mutation shape) is already established for products, categories, and collections. Namespace operations are authenticated — they belong behind the existing context-based auth chain rather than a separate REST route.
 
 **Alternatives considered**:
 - REST handlers at `/api/namespaces`: Simpler for the server, but would split the client contract between two transports. The gitstore-admin frontend already uses GraphQL. No precedent in the project for domain operations via REST (login/refresh are pre-auth flows, deliberately outside GraphQL).
@@ -104,7 +104,7 @@ CREATE INDEX IF NOT EXISTS namespaces_by_identifier ON namespaces (identifier);
 **Decision**: The following identifiers are reserved and MUST be rejected by the validation layer (FR-002):
 
 ```
-admin, root, system, default, api, git, www, mail, smtp, ftp,
+admin, root, system, default, api, git, www, mail, smtp, ftp, org, orgs,
 static, assets, cdn, docs, help, support, billing, status, health,
 internal, local, localhost, null, undefined, true, false, new, test,
 gitstore, enterprise, org, user, namespace, namespaces, repo, repos
