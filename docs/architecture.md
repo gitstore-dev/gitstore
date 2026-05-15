@@ -33,14 +33,41 @@ The API gateway (`gitstore-api`) and the Git server (`gitstore-git-service`) com
 
 Key environment variables:
 
-| Service                | Variable             | Purpose                                                |
-|------------------------|----------------------|--------------------------------------------------------|
-| `gitstore-api`         | `GITSTORE_GIT__GRPC__URI`  | gRPC address of git-service (e.g. `dns:///git-service:50051`) |
-| `gitstore-api`         | `GITSTORE_GIT__WS__URI`    | WebSocket URL for catalogue-reload notifications       |
-| `gitstore-git-service` | `GITSTORE_GRPC__PORT` | Port the gRPC server binds on (default `50051`)        |
-| `gitstore-git-service` | `GITSTORE_GIT__DATA_DIR`  | Path to the bare repository directory                  |
+| Service                | Variable                  | Purpose                                                       |
+|------------------------|---------------------------|---------------------------------------------------------------|
+| `gitstore-api`         | `GITSTORE_GIT__GRPC__URI` | gRPC address of git-service (e.g. `dns:///git-service:50051`) |
+| `gitstore-api`         | `GITSTORE_GIT__WS__URI`   | WebSocket URL for catalogue-reload notifications              |
+| `gitstore-git-service` | `GITSTORE_GRPC__PORT`     | Port the gRPC server binds on (default `50051`)               |
+| `gitstore-git-service` | `GITSTORE_GIT__DATA_DIR`  | Path to the bare repository directory                         |
 
 These folders map directly to the control, storage, and distribution planes described below.
+
+### Dynamic GraphQL Schema for CRD-Style Kinds
+
+The platform supports CRD-style kinds, so GraphQL schema shape cannot be treated as fully static.
+
+- `gitstore-api` should watch kind/definition registry updates from Git and trigger schema refresh.
+- Runtime synthesis should translate JSON Schema-backed kind definitions into GraphQL object types and fields.
+- Generated query roots should stay namespaced by domain (for example `query { catalog { product(id: "...") } }`).
+
+Schema lifecycle should follow a safe publish pattern:
+
+1. Build a candidate schema from current registry state.
+2. Validate and wire resolvers.
+3. Atomically publish if valid.
+4. Keep the last known-good schema active on failure.
+
+### Direct Synthesis vs Federation
+
+For core kinds, prefer direct synthesis inside `gitstore-api` to reduce network hops and keep resolver behavior predictable.
+
+Federation is an optional path for externally owned integrations:
+
+- External apps can expose independent subgraphs and extend shared entities.
+- Composition uses federation ownership directives such as `@key`, `@extends`, and `@external`.
+- Composition may run through an edge router/gateway when extension boundaries justify service isolation.
+
+Use federation when an extension owns its own service boundary or datastore and must participate in cross-entity graph relationships. Keep core catalogue/resource kinds on direct synthesis by default.
 
 ### Git Engine — gitoxide (gix)
 
