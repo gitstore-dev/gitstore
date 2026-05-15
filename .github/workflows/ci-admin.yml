@@ -32,7 +32,9 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 'lts/*'
+        # Astro 6.x requires Node >=22.12.0.
+        # Pin to Node 22 to avoid LTS rollover surprises breaking Admin CI.
+        node-version: '22.12.0'
         cache: 'npm'
         cache-dependency-path: gitstore-admin/package-lock.json
 
