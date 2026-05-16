@@ -62,8 +62,8 @@ func newCollection() *datastore.Collection {
 
 func newNamespace(tier datastore.NamespaceTier) *datastore.Namespace {
 	now := time.Now()
-	id := "ns-id-" + newID()[:8]
-	identifier := "ns-" + id[6:]
+	id := newID()
+	identifier := "ns-" + newID()[:8]
 	return &datastore.Namespace{
 		ID:         id,
 		Identifier: identifier,
@@ -440,7 +440,7 @@ func RunContractSuite(t *testing.T, ds datastore.Datastore) {
 	})
 
 	t.Run("Namespace/TestDeleteNamespace_notFound", func(t *testing.T) {
-		err := ds.DeleteNamespace(ctx, "ns-id-"+newID()[:8])
+		err := ds.DeleteNamespace(ctx, newID())
 		assert.ErrorIs(t, err, datastore.ErrNotFound)
 	})
 
