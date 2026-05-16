@@ -26,7 +26,6 @@ import (
 type scyllaDatastore struct {
 	session         gocqlx.Session
 	log             *zap.Logger
-	keyspace        string
 	productTable    *table.Table
 	categoryTable   *table.Table
 	collectionTable *table.Table
@@ -104,11 +103,10 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 
 	ks := cfg.Keyspace
 	return &scyllaDatastore{
-		session:  gocqlx.NewSession(rawSession),
-		log:      log,
-		keyspace: ks,
+		session: gocqlx.NewSession(rawSession),
+		log:     log,
 		productTable: table.New(table.Metadata{
-			Name: ks + ".products",
+			Name: "products",
 			Columns: []string{
 				"id", "sku", "title", "price", "currency",
 				"inventory_status", "inventory_quantity",
@@ -193,7 +191,7 @@ func (s *scyllaDatastore) GetProduct(_ context.Context, id string) (*datastore.P
 }
 
 func (s *scyllaDatastore) GetProductBySKU(_ context.Context, sku string) (*datastore.Product, error) {
-	stmt, names := qb.Select(s.keyspace + ".products").
+	stmt, names := qb.Select("products").
 		Columns(s.productTable.Metadata().Columns...).
 		Where(qb.Eq("sku")).
 		ToCql()
@@ -213,13 +211,13 @@ func (s *scyllaDatastore) ListProducts(_ context.Context, filter datastore.Produ
 	var bindMap qb.M
 
 	if filter.CategoryID != "" {
-		stmt, names = qb.Select(s.keyspace + ".products").
+		stmt, names = qb.Select("products").
 			Columns(s.productTable.Metadata().Columns...).
 			Where(qb.Eq("category_id")).
 			ToCql()
 		bindMap = qb.M{"category_id": filter.CategoryID}
 	} else {
-		stmt, names = qb.Select(s.keyspace + ".products").
+		stmt, names = qb.Select("products").
 			Columns(s.productTable.Metadata().Columns...).
 			ToCql()
 		bindMap = qb.M{}
@@ -294,7 +292,7 @@ func (s *scyllaDatastore) GetCategory(_ context.Context, id string) (*datastore.
 }
 
 func (s *scyllaDatastore) GetCategoryBySlug(_ context.Context, slug string) (*datastore.Category, error) {
-	stmt, names := qb.Select(s.keyspace + ".categories").
+	stmt, names := qb.Select("categories").
 		Columns(s.categoryTable.Metadata().Columns...).
 		Where(qb.Eq("slug")).
 		ToCql()
@@ -309,7 +307,7 @@ func (s *scyllaDatastore) GetCategoryBySlug(_ context.Context, slug string) (*da
 }
 
 func (s *scyllaDatastore) ListCategories(_ context.Context) ([]*datastore.Category, error) {
-	stmt, names := qb.Select(s.keyspace + ".categories").
+	stmt, names := qb.Select("categories").
 		Columns(s.categoryTable.Metadata().Columns...).
 		ToCql()
 	var rows []categoryRow
@@ -379,7 +377,7 @@ func (s *scyllaDatastore) GetCollection(_ context.Context, id string) (*datastor
 }
 
 func (s *scyllaDatastore) GetCollectionBySlug(_ context.Context, slug string) (*datastore.Collection, error) {
-	stmt, names := qb.Select(s.keyspace + ".collections").
+	stmt, names := qb.Select("collections").
 		Columns(s.collectionTable.Metadata().Columns...).
 		Where(qb.Eq("slug")).
 		ToCql()
@@ -394,7 +392,7 @@ func (s *scyllaDatastore) GetCollectionBySlug(_ context.Context, slug string) (*
 }
 
 func (s *scyllaDatastore) ListCollections(_ context.Context) ([]*datastore.Collection, error) {
-	stmt, names := qb.Select(s.keyspace + ".collections").
+	stmt, names := qb.Select("collections").
 		Columns(s.collectionTable.Metadata().Columns...).
 		ToCql()
 	var rows []collectionRow
