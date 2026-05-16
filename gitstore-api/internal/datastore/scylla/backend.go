@@ -102,34 +102,11 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 	}
 
 	return &scyllaDatastore{
-		session: gocqlx.NewSession(rawSession),
-		log:     log,
-		productTable: table.New(table.Metadata{
-			Name: "products",
-			Columns: []string{
-				"id", "sku", "title", "price", "currency",
-				"inventory_status", "inventory_quantity",
-				"category_id", "collection_ids", "images",
-				"metadata", "created_at", "updated_at", "body",
-			},
-			PartKey: []string{"id"},
-		}),
-		categoryTable: table.New(table.Metadata{
-			Name: "categories",
-			Columns: []string{
-				"id", "name", "slug", "parent_id",
-				"display_order", "created_at", "updated_at", "body",
-			},
-			PartKey: []string{"id"},
-		}),
-		collectionTable: table.New(table.Metadata{
-			Name: "collections",
-			Columns: []string{
-				"id", "name", "slug", "display_order",
-				"product_ids", "created_at", "updated_at", "body",
-			},
-			PartKey: []string{"id"},
-		}),
+		session:         gocqlx.NewSession(rawSession),
+		log:             log,
+		productTable:    Product,
+		categoryTable:   Category,
+		collectionTable: Collection,
 	}, nil
 }
 
