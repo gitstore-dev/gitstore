@@ -9,7 +9,6 @@ package scylla_test
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strconv"
 	"testing"
@@ -47,7 +46,7 @@ func TestRunMigrations_AppliesSchema(t *testing.T) {
 	session := newRawSession(t)
 	log := zap.NewNop()
 
-	err := scylla.RunMigrations(context.Background(), session, uuid.New().String(), scyllaKeyspace, log)
+	err := scylla.RunMigrations(context.Background(), session, scyllaKeyspace, uuid.New().String(), log)
 	require.NoError(t, err)
 
 	// Verify keyspace exists.
@@ -72,8 +71,8 @@ func TestRunMigrations_Idempotent(t *testing.T) {
 	ctx := context.Background()
 
 	// Running migrations twice must not return an error.
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), scyllaKeyspace, log))
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), scyllaKeyspace, log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, scyllaKeyspace, uuid.New().String(), log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, scyllaKeyspace, uuid.New().String(), log))
 }
 
 func TestRunMigrations_LockReleasedAfterSuccess(t *testing.T) {
@@ -81,12 +80,12 @@ func TestRunMigrations_LockReleasedAfterSuccess(t *testing.T) {
 	log := zap.NewNop()
 	ctx := context.Background()
 
-	require.NoError(t, scylla.RunMigrations(ctx, session, uuid.New().String(), scyllaKeyspace, log))
+	require.NoError(t, scylla.RunMigrations(ctx, session, scyllaKeyspace, uuid.New().String(), log))
 
 	// After success the lock row must be gone (deleted by releaseLock).
 	var holder string
 	err := session.Query(
-		fmt.Sprintf(`SELECT holder FROM %s.schema_migrations_lock WHERE lock_key = 'migration'`, scyllaKeyspace),
+		`SELECT holder FROM schema_migrations_lock WHERE lock_key = 'migration'`,
 	).Scan(&holder)
 	// ErrNotFound means the row was deleted, which is what we want.
 	assert.ErrorIs(t, err, gocql.ErrNotFound)

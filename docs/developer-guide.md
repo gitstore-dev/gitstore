@@ -569,7 +569,7 @@ fn test_create_product_workflow() {
 wscat -c ws://localhost:8080
 
 # Check API logs
-docker-compose logs api | grep websocket
+docker compose logs api | grep websocket
 
 # Manual cache invalidation
 # TODO returns 404

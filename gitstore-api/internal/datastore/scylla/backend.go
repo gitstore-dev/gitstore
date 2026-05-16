@@ -97,7 +97,7 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 	}
 
 	instanceID := uuid.New().String()
-	if err := RunMigrations(context.Background(), rawSession, instanceID, cfg.Keyspace, log); err != nil {
+	if err := RunMigrations(context.Background(), rawSession, cfg.Keyspace, instanceID, log); err != nil {
 		rawSession.Close()
 		return nil, fmt.Errorf("scylla: migrations: %w", err)
 	}
