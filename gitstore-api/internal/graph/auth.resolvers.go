@@ -7,7 +7,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gitstore-dev/gitstore/api/internal/graph/model"
@@ -38,7 +37,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 		return nil, gqlerror.Errorf("internal server error")
 	}
 
-	expiresAt := time.Now().Add(24 * time.Hour)
+	expiresAt := time.Now().Add(r.authMiddleware.GetTokenDuration())
 	return &model.LoginPayload{
 		ClientMutationID: input.ClientMutationID,
 		Session: &model.AuthSession{
@@ -59,5 +58,5 @@ func (r *mutationResolver) Logout(ctx context.Context, input model.LogoutInput) 
 
 // RefreshToken is the resolver for the refreshToken field.
 func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (*model.RefreshTokenPayload, error) {
-	return nil, fmt.Errorf("not implemented: RefreshToken")
+	return nil, gqlerror.Errorf("not implemented: RefreshToken")
 }
