@@ -34,7 +34,7 @@ type scyllaDatastore struct {
 // row structs mirror the CQL columns.
 
 type productRow struct {
-	ID                string            `db:"id"`
+	ID                gocql.UUID        `db:"id"`
 	SKU               string            `db:"sku"`
 	Title             string            `db:"title"`
 	Price             *inf.Dec          `db:"price"`
@@ -51,25 +51,25 @@ type productRow struct {
 }
 
 type categoryRow struct {
-	ID           string  `db:"id"`
-	Name         string  `db:"name"`
-	Slug         string  `db:"slug"`
-	ParentID     *string `db:"parent_id"`
-	DisplayOrder int     `db:"display_order"`
-	CreatedAt    int64   `db:"created_at"`
-	UpdatedAt    int64   `db:"updated_at"`
-	Body         string  `db:"body"`
+	ID           gocql.UUID `db:"id"`
+	Name         string     `db:"name"`
+	Slug         string     `db:"slug"`
+	ParentID     *string    `db:"parent_id"`
+	DisplayOrder int        `db:"display_order"`
+	CreatedAt    int64      `db:"created_at"`
+	UpdatedAt    int64      `db:"updated_at"`
+	Body         string     `db:"body"`
 }
 
 type collectionRow struct {
-	ID           string   `db:"id"`
-	Name         string   `db:"name"`
-	Slug         string   `db:"slug"`
-	DisplayOrder int      `db:"display_order"`
-	ProductIDs   []string `db:"product_ids"`
-	CreatedAt    int64    `db:"created_at"`
-	UpdatedAt    int64    `db:"updated_at"`
-	Body         string   `db:"body"`
+	ID           gocql.UUID `db:"id"`
+	Name         string     `db:"name"`
+	Slug         string     `db:"slug"`
+	DisplayOrder int        `db:"display_order"`
+	ProductIDs   []string   `db:"product_ids"`
+	CreatedAt    int64      `db:"created_at"`
+	UpdatedAt    int64      `db:"updated_at"`
+	Body         string     `db:"body"`
 }
 
 // New opens a ScyllaDB connection, runs pending migrations, and returns a Datastore.
@@ -101,7 +101,6 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 		return nil, fmt.Errorf("scylla: migrations: %w", err)
 	}
 
-	ks := cfg.Keyspace
 	return &scyllaDatastore{
 		session: gocqlx.NewSession(rawSession),
 		log:     log,
@@ -116,7 +115,7 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 			PartKey: []string{"id"},
 		}),
 		categoryTable: table.New(table.Metadata{
-			Name: ks + ".categories",
+			Name: "categories",
 			Columns: []string{
 				"id", "name", "slug", "parent_id",
 				"display_order", "created_at", "updated_at", "body",
@@ -124,7 +123,7 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 			PartKey: []string{"id"},
 		}),
 		collectionTable: table.New(table.Metadata{
-			Name: ks + ".collections",
+			Name: "collections",
 			Columns: []string{
 				"id", "name", "slug", "display_order",
 				"product_ids", "created_at", "updated_at", "body",
@@ -440,7 +439,7 @@ func toProductRow(p *datastore.Product) *productRow {
 		meta[k] = fmt.Sprintf("%v", v)
 	}
 	return &productRow{
-		ID:                p.ID,
+		ID:                mustParseUUID(p.ID),
 		SKU:               p.SKU,
 		Title:             p.Title,
 		Price:             inf.NewDec(int64(p.Price*1e8), 8),
@@ -468,7 +467,7 @@ func fromProductRow(r *productRow) *datastore.Product {
 		price = f
 	}
 	return &datastore.Product{
-		ID:                r.ID,
+		ID:                r.ID.String(),
 		SKU:               r.SKU,
 		Title:             r.Title,
 		Price:             price,
@@ -487,7 +486,7 @@ func fromProductRow(r *productRow) *datastore.Product {
 
 func toCategoryRow(c *datastore.Category) *categoryRow {
 	return &categoryRow{
-		ID:           c.ID,
+		ID:           mustParseUUID(c.ID),
 		Name:         c.Name,
 		Slug:         c.Slug,
 		ParentID:     c.ParentID,
@@ -500,7 +499,7 @@ func toCategoryRow(c *datastore.Category) *categoryRow {
 
 func fromCategoryRow(r *categoryRow) *datastore.Category {
 	return &datastore.Category{
-		ID:           r.ID,
+		ID:           r.ID.String(),
 		Name:         r.Name,
 		Slug:         r.Slug,
 		ParentID:     r.ParentID,
@@ -513,7 +512,7 @@ func fromCategoryRow(r *categoryRow) *datastore.Category {
 
 func toCollectionRow(c *datastore.Collection) *collectionRow {
 	return &collectionRow{
-		ID:           c.ID,
+		ID:           mustParseUUID(c.ID),
 		Name:         c.Name,
 		Slug:         c.Slug,
 		DisplayOrder: c.DisplayOrder,
@@ -526,7 +525,7 @@ func toCollectionRow(c *datastore.Collection) *collectionRow {
 
 func fromCollectionRow(r *collectionRow) *datastore.Collection {
 	return &datastore.Collection{
-		ID:           r.ID,
+		ID:           r.ID.String(),
 		Name:         r.Name,
 		Slug:         r.Slug,
 		DisplayOrder: r.DisplayOrder,
@@ -535,4 +534,12 @@ func fromCollectionRow(r *collectionRow) *datastore.Collection {
 		UpdatedAt:    millisToTime(r.UpdatedAt),
 		Body:         r.Body,
 	}
+}
+
+func mustParseUUID(s string) gocql.UUID {
+	u, err := gocql.ParseUUID(s)
+	if err != nil {
+		panic(err)
+	}
+	return u
 }

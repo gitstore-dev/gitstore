@@ -3,7 +3,7 @@
 -- UUID fields use text for Go string compatibility. Price uses decimal;
 
 CREATE TABLE IF NOT EXISTS products (
-    id                 text       PRIMARY KEY,
+    id                 uuid       PRIMARY KEY,
     sku                text,
     title              text,
     price              decimal,
@@ -20,23 +20,23 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 CREATE TABLE IF NOT EXISTS categories (
-    id            text  PRIMARY KEY,
-    name          text,
-    slug          text,
-    parent_id     text,
-    display_order int,
-    created_at    timestamp,
-    updated_at    timestamp,
-    body          text
+    id                 uuid       PRIMARY KEY,
+    name               text,
+    slug               text,
+    parent_id          text,
+    display_order      int,
+    created_at         timestamp,
+    updated_at         timestamp,
+    body               text
 );
 
 CREATE TABLE IF NOT EXISTS collections (
-    id            text  PRIMARY KEY,
-    name          text,
-    slug          text,
-    display_order int,
-    product_ids   set<text>,
-    created_at    timestamp,
-    updated_at    timestamp,
-    body          text
+    id                 uuid       PRIMARY KEY,
+    name               text,
+    slug               text,
+    display_order      int,
+    product_ids        set<text>,
+    created_at         timestamp,
+    updated_at         timestamp,
+    body               text
 );
