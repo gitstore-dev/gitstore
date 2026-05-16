@@ -27,9 +27,9 @@
 
 **Purpose**: Create the GraphQL schema contract and regenerate gqlgen code; polish the existing auth resolver.
 
-- [ ] T001 Create `shared/schemas/namespace.graphqls` with `NamespaceTier` enum, `Namespace` type (implementing `Node`), `CreateNamespaceInput`, `DeleteNamespaceInput`, `CreateNamespacePayload`, `DeleteNamespacePayload`, and `extend type Query` / `extend type Mutation` entries (do NOT touch `schema.graphqls`; follow the `auth.graphqls` `extend type` pattern)
-- [ ] T002 Run `cd gitstore-api && go generate ./...` to regenerate `internal/graph/generated/generated.go`, `internal/graph/model/models_gen.go`, and the `namespace.resolvers.go` resolver stub
-- [ ] T003 [P] Polish `gitstore-api/internal/graph/auth.resolvers.go`: replace the naive implementation with proper structured logging (`r.logger`), `gqlerror.Errorf` error responses, correct sentinel-error mapping (`ErrNotFound` → not-found, `ErrInvalidCredentials` → unauthenticated), and remove any `panic` stubs — consistent with the `handler.NewLoginHandler` pattern in `internal/handler/login.go`
+- [X] T001 Create `shared/schemas/namespace.graphqls` with `NamespaceTier` enum, `Namespace` type (implementing `Node`), `CreateNamespaceInput`, `DeleteNamespaceInput`, `CreateNamespacePayload`, `DeleteNamespacePayload`, and `extend type Query` / `extend type Mutation` entries (do NOT touch `schema.graphqls`; follow the `auth.graphqls` `extend type` pattern)
+- [X] T002 Run `cd gitstore-api && go generate ./...` to regenerate `internal/graph/generated/generated.go`, `internal/graph/model/models_gen.go`, and the `namespace.resolvers.go` resolver stub
+- [X] T003 [P] Polish `gitstore-api/internal/graph/auth.resolvers.go`: replace the naive implementation with proper structured logging (`r.logger`), `gqlerror.Errorf` error responses, correct sentinel-error mapping (`ErrNotFound` → not-found, `ErrInvalidCredentials` → unauthenticated), and remove any `panic` stubs — consistent with the `handler.NewLoginHandler` pattern in `internal/handler/login.go`
 
 **Checkpoint**: GraphQL schema is defined; gqlgen artifacts reflect the new types; auth resolver is production-quality.
 
@@ -41,13 +41,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Add `NamespaceTier` type and constants (`user`, `organisation`, `enterprise`) plus the `Namespace` struct (all fields from `data-model.md`) to `gitstore-api/internal/datastore/entities.go`
-- [ ] T005 Extend the `Datastore` interface in `gitstore-api/internal/datastore/datastore.go` with five namespace methods: `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` — following the existing error contract (`ErrNotFound`, `ErrAlreadyExists`, `ErrInvalidArgument`)
-- [ ] T006 [P] Add the namespaces table and identifier index to `gitstore-api/internal/datastore/scylla/migrations/001_initial_schema.cql` (append after the collections index block — no new migration file): `CREATE TABLE IF NOT EXISTS namespaces` with columns `id text PRIMARY KEY`, `identifier text`, `display_name text`, `tier text`, `parent_enterprise_id text`, `created_at timestamp`, `created_by text`, `updated_at timestamp`, `updated_by text`; and `CREATE INDEX IF NOT EXISTS namespaces_by_identifier ON namespaces (identifier)`
-- [ ] T007 Add the `"namespaces"` table to the memdb `DBSchema` in `gitstore-api/internal/datastore/memdb/schema.go` with three indices: `id` (unique, `StringFieldIndex{Field: "ID"}`), `identifier` (unique, `StringFieldIndex{Field: "Identifier"}`), `tier` (non-unique, `StringFieldIndex{Field: "Tier"}`)
-- [ ] T008 Implement `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` on `memdbDatastore` in `gitstore-api/internal/datastore/memdb/backend.go` — follow the existing `CreateCategory`/`GetCategoryBySlug`/`ListCategories`/`DeleteCategory` pattern; `CreateNamespace` must check both `id` and `identifier` uniqueness within the same write transaction
-- [ ] T009 Add `namespaceRow` struct with `db:""` tags, `namespaceTable *table.Table` field to `scyllaDatastore`, initialize the table in `New()`, and implement `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` in `gitstore-api/internal/datastore/scylla/backend.go` — follow the `CreateCategory`/`GetCategoryBySlug`/`ListCategories`/`DeleteCategory` pattern; timestamps use `time.Time` in the struct mapped to `timestamp` columns via gocqlx
-- [ ] T010 Add five namespace wrapper methods (`CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace`) to `InstrumentedDatastore` in `gitstore-api/internal/datastore/instrumented.go` — each method records latency and error count via `d.observe(opName, start, err)`, identical in structure to the existing category wrappers
+- [X] T004 [P] Add `NamespaceTier` type and constants (`user`, `organisation`, `enterprise`) plus the `Namespace` struct (all fields from `data-model.md`) to `gitstore-api/internal/datastore/entities.go`
+- [X] T005 Extend the `Datastore` interface in `gitstore-api/internal/datastore/datastore.go` with five namespace methods: `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` — following the existing error contract (`ErrNotFound`, `ErrAlreadyExists`, `ErrInvalidArgument`)
+- [X] T006 [P] Add the namespaces table and identifier index to `gitstore-api/internal/datastore/scylla/migrations/001_initial_schema.cql` (append after the collections index block — no new migration file): `CREATE TABLE IF NOT EXISTS namespaces` with columns `id text PRIMARY KEY`, `identifier text`, `display_name text`, `tier text`, `parent_enterprise_id text`, `created_at timestamp`, `created_by text`, `updated_at timestamp`, `updated_by text`; and `CREATE INDEX IF NOT EXISTS namespaces_by_identifier ON namespaces (identifier)`
+- [X] T007 Add the `"namespaces"` table to the memdb `DBSchema` in `gitstore-api/internal/datastore/memdb/schema.go` with three indices: `id` (unique, `StringFieldIndex{Field: "ID"}`), `identifier` (unique, `StringFieldIndex{Field: "Identifier"}`), `tier` (non-unique, `StringFieldIndex{Field: "Tier"}`)
+- [X] T008 Implement `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` on `memdbDatastore` in `gitstore-api/internal/datastore/memdb/backend.go` — follow the existing `CreateCategory`/`GetCategoryBySlug`/`ListCategories`/`DeleteCategory` pattern; `CreateNamespace` must check both `id` and `identifier` uniqueness within the same write transaction
+- [X] T009 Add `namespaceRow` struct with `db:""` tags, `namespaceTable *table.Table` field to `scyllaDatastore`, initialize the table in `New()`, and implement `CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace` in `gitstore-api/internal/datastore/scylla/backend.go` — follow the `CreateCategory`/`GetCategoryBySlug`/`ListCategories`/`DeleteCategory` pattern; timestamps use `time.Time` in the struct mapped to `timestamp` columns via gocqlx
+- [X] T010 Add five namespace wrapper methods (`CreateNamespace`, `GetNamespace`, `GetNamespaceByIdentifier`, `ListNamespaces`, `DeleteNamespace`) to `InstrumentedDatastore` in `gitstore-api/internal/datastore/instrumented.go` — each method records latency and error count via `d.observe(opName, start, err)`, identical in structure to the existing category wrappers
 
 **Checkpoint**: `go build ./...` passes in `gitstore-api/`; all existing tests still pass; namespace interface is fully implemented in both backends.
 
@@ -61,14 +61,14 @@
 
 ### Tests for User Story 1 ⚠️ Write FIRST — verify they FAIL before T013
 
-- [ ] T011 [P] [US1] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with namespace datastore contract tests: `TestCreateNamespace_success`, `TestCreateNamespace_duplicateIdentifier` (returns `ErrAlreadyExists`), `TestCreateNamespace_acrossAllTiers` (same identifier conflicts regardless of tier), `TestGetNamespaceByIdentifier_notFound`
-- [ ] T012 [P] [US1] Create `gitstore-api/internal/graph/namespace_service_test.go` with GraphQL-level integration tests for `createNamespace`: success (user tier), success (org tier), conflict (duplicate identifier), invalid identifier format (spaces, uppercase, leading hyphen), reserved identifier (`admin`), enterprise tier without `isAdmin` returns permission-denied
+- [X] T011 [P] [US1] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with namespace datastore contract tests: `TestCreateNamespace_success`, `TestCreateNamespace_duplicateIdentifier` (returns `ErrAlreadyExists`), `TestCreateNamespace_acrossAllTiers` (same identifier conflicts regardless of tier), `TestGetNamespaceByIdentifier_notFound`
+- [X] T012 [P] [US1] Create `gitstore-api/internal/graph/namespace_service_test.go` with GraphQL-level integration tests for `createNamespace`: success (user tier), success (org tier), conflict (duplicate identifier), invalid identifier format (spaces, uppercase, leading hyphen), reserved identifier (`admin`), enterprise tier without `isAdmin` returns permission-denied
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add `CreateNamespace(ctx, input, callerUsername, isAdmin)` to `gitstore-api/internal/graph/service.go`: lowercase + validate identifier against regex `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`, check reserved names list (from `research.md`), enforce enterprise-tier-requires-admin gate, resolve `parentEnterpriseIdentifier` → `ParentEnterpriseID` via `GetNamespaceByIdentifier`, set `CreatedAt`/`CreatedBy`/`UpdatedAt`/`UpdatedBy`, call `store.CreateNamespace`; map `ErrAlreadyExists` → GraphQL conflict error, `ErrInvalidArgument` → validation error
-- [ ] T014 [US1] Implement the `createNamespace` mutation resolver body in `gitstore-api/internal/graph/namespace.resolvers.go`: extract `claims` from context via `middleware.GetUserFromContext`, require authentication (`claims == nil` → unauthenticated error), call `r.service.CreateNamespace`, return `CreateNamespacePayload{Namespace: model}`
-- [ ] T015 [P] [US1] Add `datastoreNamespaceToModel(ns *datastore.Namespace) *model.Namespace` converter to `gitstore-api/internal/graph/converters.go` mapping all fields including `Tier` (`NamespaceTier` string → `model.NamespaceTier` enum) and `ParentEnterpriseID` (`*string` → `*string`)
+- [X] T013 [US1] Add `CreateNamespace(ctx, input, callerUsername, isAdmin)` to `gitstore-api/internal/graph/service.go`: lowercase + validate identifier against regex `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`, check reserved names list (from `research.md`), enforce enterprise-tier-requires-admin gate, resolve `parentEnterpriseIdentifier` → `ParentEnterpriseID` via `GetNamespaceByIdentifier`, set `CreatedAt`/`CreatedBy`/`UpdatedAt`/`UpdatedBy`, call `store.CreateNamespace`; map `ErrAlreadyExists` → GraphQL conflict error, `ErrInvalidArgument` → validation error
+- [X] T014 [US1] Implement the `createNamespace` mutation resolver body in `gitstore-api/internal/graph/namespace.resolvers.go`: extract `claims` from context via `middleware.GetUserFromContext`, require authentication (`claims == nil` → unauthenticated error), call `r.service.CreateNamespace`, return `CreateNamespacePayload{Namespace: model}`
+- [X] T015 [P] [US1] Add `datastoreNamespaceToModel(ns *datastore.Namespace) *model.Namespace` converter to `gitstore-api/internal/graph/converters.go` mapping all fields including `Tier` (`NamespaceTier` string → `model.NamespaceTier` enum) and `ParentEnterpriseID` (`*string` → `*string`)
 
 **Checkpoint**: `createNamespace` mutation works end-to-end; all T011/T012 tests pass; User Story 1 is independently testable via quickstart.md.
 
@@ -82,13 +82,13 @@
 
 ### Tests for User Story 2 ⚠️ Write FIRST — verify they FAIL before T018
 
-- [ ] T016 [P] [US2] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with `TestListNamespaces_empty`, `TestListNamespaces_multiple`, `TestGetNamespace_byID_success`, `TestGetNamespaceByIdentifier_success`, `TestGetNamespaceByIdentifier_notFound`
-- [ ] T017 [P] [US2] Add `namespaces` query and `namespace(identifier)` query integration tests to `gitstore-api/internal/graph/namespace_service_test.go`: list returns all created namespaces, get by identifier returns correct metadata, get unknown identifier returns not-found error
+- [X] T016 [P] [US2] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with `TestListNamespaces_empty`, `TestListNamespaces_multiple`, `TestGetNamespace_byID_success`, `TestGetNamespaceByIdentifier_success`, `TestGetNamespaceByIdentifier_notFound`
+- [X] T017 [P] [US2] Add `namespaces` query and `namespace(identifier)` query integration tests to `gitstore-api/internal/graph/namespace_service_test.go`: list returns all created namespaces, get by identifier returns correct metadata, get unknown identifier returns not-found error
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Add `GetNamespaceByIdentifier(ctx, identifier)`, `GetNamespaceByID(ctx, id)`, and `ListNamespaces(ctx)` service methods to `gitstore-api/internal/graph/service.go` — map `ErrNotFound` to GraphQL not-found error; log `zap.String("identifier", ...)` on not-found
-- [ ] T019 [US2] Implement `namespace`, `namespaceById`, and `namespaces` query resolver bodies in `gitstore-api/internal/graph/namespace.resolvers.go` — all three are unauthenticated reads (no auth gate needed per spec); call respective service methods; return `nil, gqlerror` on not-found
+- [X] T018 [US2] Add `GetNamespaceByIdentifier(ctx, identifier)`, `GetNamespaceByID(ctx, id)`, and `ListNamespaces(ctx)` service methods to `gitstore-api/internal/graph/service.go` — map `ErrNotFound` to GraphQL not-found error; log `zap.String("identifier", ...)` on not-found
+- [X] T019 [US2] Implement `namespace`, `namespaceById`, and `namespaces` query resolver bodies in `gitstore-api/internal/graph/namespace.resolvers.go` — all three are unauthenticated reads (no auth gate needed per spec); call respective service methods; return `nil, gqlerror` on not-found
 
 **Checkpoint**: All three query resolvers work; T016/T017 tests pass; User Stories 1 and 2 are independently functional.
 
@@ -102,13 +102,13 @@
 
 ### Tests for User Story 3 ⚠️ Write FIRST — verify they FAIL before T022
 
-- [ ] T020 [P] [US3] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with `TestDeleteNamespace_success`, `TestDeleteNamespace_notFound` (returns `ErrNotFound`), `TestDeleteNamespace_thenGetReturnsNotFound`
-- [ ] T021 [P] [US3] Add `deleteNamespace` mutation integration tests to `gitstore-api/internal/graph/namespace_service_test.go`: owner can delete own namespace, admin can delete any namespace, non-owner non-admin gets permission-denied, unknown identifier gets not-found, unauthenticated caller gets unauthenticated error
+- [X] T020 [P] [US3] Extend `gitstore-api/tests/contract/datastore/contract_test.go` with `TestDeleteNamespace_success`, `TestDeleteNamespace_notFound` (returns `ErrNotFound`), `TestDeleteNamespace_thenGetReturnsNotFound`
+- [X] T021 [P] [US3] Add `deleteNamespace` mutation integration tests to `gitstore-api/internal/graph/namespace_service_test.go`: owner can delete own namespace, admin can delete any namespace, non-owner non-admin gets permission-denied, unknown identifier gets not-found, unauthenticated caller gets unauthenticated error
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Add `DeleteNamespace(ctx, identifier, callerUsername, isAdmin)` service method to `gitstore-api/internal/graph/service.go`: look up namespace by identifier (not-found → error), check ownership (`ns.CreatedBy == callerUsername || isAdmin` — else permission-denied), call `hasRepositories` stub (always returns `false`; comment `// TODO: enforce when repositories table exists`), call `store.DeleteNamespace`; map errors appropriately
-- [ ] T023 [US3] Implement the `deleteNamespace` mutation resolver body in `gitstore-api/internal/graph/namespace.resolvers.go`: require authentication, call `r.service.DeleteNamespace`, return `DeleteNamespacePayload{DeletedIdentifier: input.Identifier}`
+- [X] T022 [US3] Add `DeleteNamespace(ctx, identifier, callerUsername, isAdmin)` service method to `gitstore-api/internal/graph/service.go`: look up namespace by identifier (not-found → error), check ownership (`ns.CreatedBy == callerUsername || isAdmin` — else permission-denied), call `hasRepositories` stub (always returns `false`; comment `// TODO: enforce when repositories table exists`), call `store.DeleteNamespace`; map errors appropriately
+- [X] T023 [US3] Implement the `deleteNamespace` mutation resolver body in `gitstore-api/internal/graph/namespace.resolvers.go`: require authentication, call `r.service.DeleteNamespace`, return `DeleteNamespacePayload{DeletedIdentifier: input.Identifier}`
 
 **Checkpoint**: All three user stories are functional; T020/T021 tests pass; `deleteNamespace` works end-to-end.
 
@@ -116,9 +116,9 @@
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T024 [P] Update `docs/architecture.md` with a namespace lifecycle management section: three tiers, global identifier uniqueness, auth model (`IsAdmin` as elevated role), `gitstore-git-service` boundary (FR-011), and `curl` / GraphQL Playground examples referencing `quickstart.md`
-- [ ] T025 [P] Verify SPDX license headers on all new files (`shared/schemas/namespace.graphqls`, new Go files): run `./scripts/check-go-license-headers.sh --diff-base origin/main` and `./scripts/check-js-license-headers.sh --diff-base origin/main`; add missing `// SPDX-License-Identifier: AGPL-3.0-or-later` headers
-- [ ] T026 Run full pre-PR validation in `gitstore-api/`: `go vet ./...`, `staticcheck ./...`, `go build -v ./...`, `go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...`; fix any failures before opening the PR
+- [X] T024 [P] Update `docs/architecture.md` with a namespace lifecycle management section: three tiers, global identifier uniqueness, auth model (`IsAdmin` as elevated role), `gitstore-git-service` boundary (FR-011), and `curl` / GraphQL Playground examples referencing `quickstart.md`
+- [X] T025 [P] Verify SPDX license headers on all new files (`shared/schemas/namespace.graphqls`, new Go files): run `./scripts/check-go-license-headers.sh --diff-base origin/main` and `./scripts/check-js-license-headers.sh --diff-base origin/main`; add missing `// SPDX-License-Identifier: AGPL-3.0-or-later` headers
+- [X] T026 Run full pre-PR validation in `gitstore-api/`: `go vet ./...`, `staticcheck ./...`, `go build -v ./...`, `go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...`; fix any failures before opening the PR
 
 ---
 

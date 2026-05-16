@@ -2,7 +2,7 @@
 
 **Feature Branch**: `009-api-namespaces`  
 **Created**: 2026-05-15  
-**Status**: Draft  
+**Status**: Closed  
 **Input**: User description: "GH#39 contains the details for our next spec. At the gitstore-api level we would introduce the concept of namespaces, gitstore-git-service only needs to know about how to write and read from bare repositories. In a future spec, we would add support for defining namespace via Markdown file with YAML (kubernetes style) frontmatter. In the future we would also add support for gitaly inspired hashed storage for git repositories (the current storage is based on repository names that is not ideal for renames)"
 
 ## Clarifications

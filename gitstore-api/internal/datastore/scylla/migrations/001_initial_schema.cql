@@ -40,3 +40,15 @@ CREATE TABLE IF NOT EXISTS collections (
     updated_at         timestamp,
     body               text
 );
+
+CREATE TABLE IF NOT EXISTS namespaces (
+    id                   uuid       PRIMARY KEY,
+    identifier           text,
+    display_name         text,
+    tier                 text,
+    parent_enterprise_id text,
+    created_at           bigint,
+    created_by           text,
+    updated_at           bigint,
+    updated_by           text
+);

@@ -24,11 +24,12 @@ import (
 
 // scyllaDatastore implements datastore.Datastore backed by ScyllaDB.
 type scyllaDatastore struct {
-	session         gocqlx.Session
-	log             *zap.Logger
-	productTable    *table.Table
-	categoryTable   *table.Table
-	collectionTable *table.Table
+	session          gocqlx.Session
+	log              *zap.Logger
+	productTable     *table.Table
+	categoryTable    *table.Table
+	collectionTable  *table.Table
+	namespaceTable   *table.Table
 }
 
 // row structs mirror the CQL columns.
@@ -72,6 +73,18 @@ type collectionRow struct {
 	Body         string     `db:"body"`
 }
 
+type namespaceRow struct {
+	ID                 gocql.UUID `db:"id"`
+	Identifier         string     `db:"identifier"`
+	DisplayName        string     `db:"display_name"`
+	Tier               string     `db:"tier"`
+	ParentEnterpriseID *string    `db:"parent_enterprise_id"`
+	CreatedAt          int64      `db:"created_at"`
+	CreatedBy          string     `db:"created_by"`
+	UpdatedAt          int64      `db:"updated_at"`
+	UpdatedBy          string     `db:"updated_by"`
+}
+
 // New opens a ScyllaDB connection, runs pending migrations, and returns a Datastore.
 // The keyspace must already exist; it is the operator's responsibility to provision it.
 func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) {
@@ -107,6 +120,7 @@ func New(cfg config.ScyllaConfig, log *zap.Logger) (datastore.Datastore, error) 
 		productTable:    Product,
 		categoryTable:   Category,
 		collectionTable: Collection,
+		namespaceTable:  Namespace,
 	}, nil
 }
 
@@ -408,6 +422,82 @@ func (s *scyllaDatastore) DeleteCollection(ctx context.Context, id string) error
 	return nil
 }
 
+// ── Namespace ─────────────────────────────────────────────────────────────────
+
+func (s *scyllaDatastore) CreateNamespace(ctx context.Context, ns *datastore.Namespace) error {
+	if ns == nil {
+		return fmt.Errorf("%w: namespace is nil", datastore.ErrInvalidArgument)
+	}
+	if ns.ID == "" {
+		return fmt.Errorf("%w: namespace id is empty", datastore.ErrInvalidArgument)
+	}
+	if _, err := s.GetNamespace(ctx, ns.ID); err == nil {
+		return fmt.Errorf("%w: namespace id %s", datastore.ErrAlreadyExists, ns.ID)
+	}
+	if existing, err := s.GetNamespaceByIdentifier(ctx, ns.Identifier); err == nil && existing.ID != ns.ID {
+		return fmt.Errorf("%w: namespace identifier %s", datastore.ErrAlreadyExists, ns.Identifier)
+	}
+	row := toNamespaceRow(ns)
+	stmt, names := s.namespaceTable.Insert()
+	if err := s.session.Query(stmt, names).BindStruct(row).ExecRelease(); err != nil {
+		return fmt.Errorf("scylla: create namespace: %w", err)
+	}
+	return nil
+}
+
+func (s *scyllaDatastore) GetNamespace(_ context.Context, id string) (*datastore.Namespace, error) {
+	var row namespaceRow
+	stmt, names := s.namespaceTable.Get()
+	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).GetRelease(&row); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: namespace id %s", datastore.ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("scylla: get namespace: %w", err)
+	}
+	return fromNamespaceRow(&row), nil
+}
+
+func (s *scyllaDatastore) GetNamespaceByIdentifier(_ context.Context, identifier string) (*datastore.Namespace, error) {
+	stmt, names := qb.Select("namespaces").
+		Columns(s.namespaceTable.Metadata().Columns...).
+		Where(qb.Eq("identifier")).
+		ToCql()
+	var row namespaceRow
+	if err := s.session.Query(stmt, names).BindMap(qb.M{"identifier": identifier}).GetRelease(&row); err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, fmt.Errorf("%w: namespace identifier %s", datastore.ErrNotFound, identifier)
+		}
+		return nil, fmt.Errorf("scylla: get namespace by identifier: %w", err)
+	}
+	return fromNamespaceRow(&row), nil
+}
+
+func (s *scyllaDatastore) ListNamespaces(_ context.Context) ([]*datastore.Namespace, error) {
+	stmt, names := qb.Select("namespaces").
+		Columns(s.namespaceTable.Metadata().Columns...).
+		ToCql()
+	var rows []namespaceRow
+	if err := s.session.Query(stmt, names).SelectRelease(&rows); err != nil {
+		return nil, fmt.Errorf("scylla: list namespaces: %w", err)
+	}
+	nss := make([]*datastore.Namespace, len(rows))
+	for i := range rows {
+		nss[i] = fromNamespaceRow(&rows[i])
+	}
+	return nss, nil
+}
+
+func (s *scyllaDatastore) DeleteNamespace(ctx context.Context, id string) error {
+	if _, err := s.GetNamespace(ctx, id); err != nil {
+		return err
+	}
+	stmt, names := s.namespaceTable.Delete()
+	if err := s.session.Query(stmt, names).BindMap(qb.M{"id": id}).ExecRelease(); err != nil {
+		return fmt.Errorf("scylla: delete namespace: %w", err)
+	}
+	return nil
+}
+
 // ── row conversion helpers ────────────────────────────────────────────────────
 
 func toProductRow(p *datastore.Product) *productRow {
@@ -519,4 +609,33 @@ func mustParseUUID(s string) gocql.UUID {
 		panic(err)
 	}
 	return u
+}
+
+func toNamespaceRow(ns *datastore.Namespace) *namespaceRow {
+	displayName := ns.DisplayName
+	return &namespaceRow{
+		ID:                 mustParseUUID(ns.ID),
+		Identifier:         ns.Identifier,
+		DisplayName:        displayName,
+		Tier:               string(ns.Tier),
+		ParentEnterpriseID: ns.ParentEnterpriseID,
+		CreatedAt:          ns.CreatedAt.UnixMilli(),
+		CreatedBy:          ns.CreatedBy,
+		UpdatedAt:          ns.UpdatedAt.UnixMilli(),
+		UpdatedBy:          ns.UpdatedBy,
+	}
+}
+
+func fromNamespaceRow(r *namespaceRow) *datastore.Namespace {
+	return &datastore.Namespace{
+		ID:                 r.ID.String(),
+		Identifier:         r.Identifier,
+		DisplayName:        r.DisplayName,
+		Tier:               datastore.NamespaceTier(r.Tier),
+		ParentEnterpriseID: r.ParentEnterpriseID,
+		CreatedAt:          millisToTime(r.CreatedAt),
+		CreatedBy:          r.CreatedBy,
+		UpdatedAt:          millisToTime(r.UpdatedAt),
+		UpdatedBy:          r.UpdatedBy,
+	}
 }

@@ -63,4 +63,22 @@ var (
 			"id",
 		},
 	})
+
+	Namespace = table.New(table.Metadata{
+		Name: "namespaces",
+		Columns: []string{
+			"id",
+			"identifier",
+			"display_name",
+			"tier",
+			"parent_enterprise_id",
+			"created_at",
+			"created_by",
+			"updated_at",
+			"updated_by",
+		},
+		PartKey: []string{
+			"id",
+		},
+	})
 )
