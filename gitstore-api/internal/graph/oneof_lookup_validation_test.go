@@ -10,6 +10,7 @@ import (
 	"github.com/gitstore-dev/gitstore/api/internal/graph/generated"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/vektah/gqlparser/v2/validator/rules"
 )
 
 func TestLookupOneOfSelectorsValidateExactlyOneKey(t *testing.T) {
@@ -51,7 +52,7 @@ func TestLookupOneOfSelectorsValidateExactlyOneKey(t *testing.T) {
 
 func assertQueryValidation(t *testing.T, schema *ast.Schema, query string, valid bool) {
 	t.Helper()
-	_, errs := gqlparser.LoadQuery(schema, query)
+	_, errs := gqlparser.LoadQueryWithRules(schema, query, rules.NewDefaultRules())
 	if valid && len(errs) > 0 {
 		t.Fatalf("expected query to validate, got %v", errs)
 	}
