@@ -424,9 +424,9 @@ query {
   }
 }
 
-# Get namespace by system-generated ID
+# Get namespace by opaque global Node ID
 query {
-  namespaceById(id: "namespace-uuid") {
+  namespaceById(id: "Z2lkOi8vR2l0U3RvcmUvTmFtZXNwYWNlL25hbWVzcGFjZS11dWlk") {
     id identifier displayName tier parentEnterpriseId
     createdAt createdBy updatedAt updatedBy
   }

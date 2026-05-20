@@ -59,7 +59,11 @@ func (r *queryResolver) Namespace(ctx context.Context, identifier string) (*mode
 
 // NamespaceByID is the resolver for the namespaceById field.
 func (r *queryResolver) NamespaceByID(ctx context.Context, id string) (*model.Namespace, error) {
-	ns, err := r.service.GetNamespaceByID(ctx, id)
+	namespaceID, err := decodeNodeIDAs(nodeKindNamespace, id)
+	if err != nil {
+		return nil, err
+	}
+	ns, err := r.service.GetNamespaceByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -63,13 +63,19 @@ Namespace create and delete mutations require authentication. Creating `ENTERPRI
 
 ## Query Operations
 
+### Global Node IDs
+
+All GraphQL types that implement `Node` expose opaque global IDs. The ID format is base64-encoded `gid://GitStore/{NodeType}/{rawID}`. For example, product raw ID `123` is returned as `Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM=`.
+
+Clients should treat these values as opaque and pass them back unchanged to `node`, `nodes`, `*ById` queries, filters, and mutation fields typed as `ID`. Business identifiers such as `product(sku:)`, `category(slug:)`, `collection(slug:)`, `namespace(identifier:)`, and namespace `parentEnterpriseIdentifier` are not global IDs.
+
 ### node
 
 Fetch any object by its globally unique ID (Relay Node interface).
 
 ```graphql
 query {
-  node(id: "prod_macbook_001") {
+  node(id: "Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM=") {
     id
     ... on Product {
       title
@@ -82,7 +88,7 @@ query {
 **Arguments**:
 - `id: ID!` - Globally unique identifier
 
-**Returns**: `Node` (can be cast to Product, Category, or Collection)
+**Returns**: `Node` (can be cast to Product, Category, Collection, or Namespace)
 
 ---
 
@@ -92,7 +98,7 @@ Fetch multiple objects by their IDs.
 
 ```graphql
 query {
-  nodes(ids: ["prod_macbook_001", "cat_electronics_001"]) {
+  nodes(ids: ["Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM=", "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"]) {
     id
     ... on Product {
       title
@@ -117,7 +123,7 @@ Get a namespace by its system-generated ID.
 
 ```graphql
 query {
-  namespaceById(id: "namespace-uuid") {
+  namespaceById(id: "Z2lkOi8vR2l0U3RvcmUvTmFtZXNwYWNlL25hbWVzcGFjZS11dWlk") {
     id
     identifier
     displayName
@@ -132,7 +138,7 @@ query {
 ```
 
 **Arguments**:
-- `id: ID!` - System-generated namespace ID
+- `id: ID!` - Namespace global ID
 
 **Returns**: `Namespace` (nullable)
 
@@ -166,7 +172,7 @@ Get a single product by ID.
 
 ```graphql
 query {
-  productById(id: "prod_macbook_001") {
+  productById(id: "Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM=") {
     id
     sku
     title
@@ -175,7 +181,7 @@ query {
 ```
 
 **Arguments**:
-- `id: ID!` - Product ID
+- `id: ID!` - Product global ID
 
 **Returns**: `Product` (nullable)
 
@@ -191,7 +197,7 @@ query {
     first: 10
     after: "cursor_abc"
     filter: {
-      categoryId: "cat_computers_001"
+      categoryId: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
       priceMin: "100"
       priceMax: "5000"
       inventoryStatus: IN_STOCK
@@ -254,7 +260,7 @@ Get a category by ID.
 
 ```graphql
 query {
-  categoryById(id: "cat_electronics_001") {
+  categoryById(id: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz") {
     id
     name
     parent {
@@ -265,7 +271,7 @@ query {
 ```
 
 **Arguments**:
-- `id: ID!` - Category ID
+- `id: ID!` - Category global ID
 
 **Returns**: `Category` (nullable)
 
@@ -338,7 +344,7 @@ Get a collection by ID.
 
 ```graphql
 query {
-  collectionById(id: "coll_featured_001") {
+  collectionById(id: "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM=") {
     id
     name
   }
@@ -346,7 +352,7 @@ query {
 ```
 
 **Arguments**:
-- `id: ID!` - Collection ID
+- `id: ID!` - Collection global ID
 
 **Returns**: `Collection` (nullable)
 
@@ -504,7 +510,7 @@ mutation {
       sku: "PROD-001"
       price: "99.99"
       currency: "USD"
-      categoryId: "cat_electronics_001"
+      categoryId: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
       inventoryStatus: IN_STOCK
       inventoryQuantity: 50
       clientMutationId: "create-product-1"
@@ -524,9 +530,9 @@ mutation {
 - `sku: String!` - Stock Keeping Unit (must be unique)
 - `price: Decimal!` - Product price
 - `currency: String!` - ISO currency code
-- `categoryId: ID!` - Category assignment
+- `categoryId: ID!` - Category global ID
 - `body: String` - Product description (markdown)
-- `collectionIds: [ID!]` - Collections to add product to
+- `collectionIds: [ID!]` - Collection global IDs to add product to
 - `images: [String!]` - Array of image URLs
 - `inventoryStatus: InventoryStatus` - Stock status
 - `inventoryQuantity: Int` - Available quantity
@@ -545,7 +551,7 @@ Update an existing product.
 mutation {
   updateProduct(
     input: {
-      id: "prod_macbook_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM="
       title: "Updated Title"
       price: "3599.00"
       clientMutationId: "update-product-1"
@@ -568,7 +574,7 @@ mutation {
 ```
 
 **Input Fields**:
-- `id: ID!` - Product ID
+- `id: ID!` - Product global ID
 - All other fields optional (only provided fields are updated)
 
 **Returns**: `UpdateProductPayload!` with optional `conflict` field for concurrent edit detection
@@ -583,7 +589,7 @@ Delete a product.
 mutation {
   deleteProduct(
     input: {
-      id: "prod_macbook_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvUHJvZHVjdC8xMjM="
       clientMutationId: "delete-product-1"
     }
   ) {
@@ -594,7 +600,7 @@ mutation {
 ```
 
 **Input Fields**:
-- `id: ID!` - Product ID to delete
+- `id: ID!` - Product global ID to delete
 - `clientMutationId: String`
 
 **Returns**: `DeleteProductPayload!`
@@ -611,7 +617,7 @@ mutation {
     input: {
       name: "Laptops"
       slug: "laptops"
-      parentId: "cat_electronics_001"
+      parentId: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
       displayOrder: 1
       clientMutationId: "create-category-1"
     }
@@ -632,7 +638,7 @@ mutation {
 - `name: String!` - Category name
 - `slug: String!` - URL-friendly identifier
 - `body: String` - Description (markdown)
-- `parentId: ID` - Parent category for hierarchy
+- `parentId: ID` - Parent category global ID for hierarchy
 - `displayOrder: Int` - Sort order
 - `clientMutationId: String`
 
@@ -648,7 +654,7 @@ Update an existing category.
 mutation {
   updateCategory(
     input: {
-      id: "cat_electronics_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
       name: "Electronics & Gadgets"
       displayOrder: 0
     }
@@ -674,7 +680,7 @@ Delete a category.
 mutation {
   deleteCategory(
     input: {
-      id: "cat_electronics_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
     }
   ) {
     deletedCategoryId
@@ -695,9 +701,9 @@ mutation {
   reorderCategories(
     input: {
       orderedIds: [
-        "cat_electronics_001",
-        "cat_books_001",
-        "cat_clothing_001"
+        "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz",
+        "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTI0",
+        "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTI1"
       ]
     }
   ) {
@@ -746,7 +752,7 @@ Update an existing collection.
 mutation {
   updateCollection(
     input: {
-      id: "coll_featured_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM="
       name: "Featured Items"
     }
   ) {
@@ -771,7 +777,7 @@ Delete a collection.
 mutation {
   deleteCollection(
     input: {
-      id: "coll_featured_001"
+      id: "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM="
     }
   ) {
     deletedCollectionId
@@ -792,9 +798,9 @@ mutation {
   reorderCollections(
     input: {
       orderedIds: [
-        "coll_featured_001",
-        "coll_new_001",
-        "coll_bestsellers_001"
+        "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM=",
+        "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjQ=",
+        "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjU="
       ]
     }
   ) {
@@ -1063,12 +1069,12 @@ input ProductFilter {
 
 **By category**:
 ```graphql
-filter: { categoryId: "cat_electronics_001" }
+filter: { categoryId: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz" }
 ```
 
 **By collection**:
 ```graphql
-filter: { collectionId: "coll_featured_001" }
+filter: { collectionId: "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM=" }
 ```
 
 **By price range**:
@@ -1084,7 +1090,7 @@ filter: { inventoryStatus: IN_STOCK }
 **Multiple filters** (AND logic):
 ```graphql
 filter: {
-  categoryId: "cat_electronics_001"
+  categoryId: "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz"
   priceMax: "1000"
   inventoryStatus: IN_STOCK
 }
@@ -1311,8 +1317,8 @@ mutation CreateProductComplete($input: CreateProductInput!) {
     "sku": "MOUSE-WIRELESS-001",
     "price": "29.99",
     "currency": "USD",
-    "categoryId": "cat_accessories_001",
-    "collectionIds": ["coll_featured_001", "coll_new_001"],
+    "categoryId": "Z2lkOi8vR2l0U3RvcmUvQ2F0ZWdvcnkvMTIz",
+    "collectionIds": ["Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjM=", "Z2lkOi8vR2l0U3RvcmUvQ29sbGVjdGlvbi8xMjQ="],
     "inventoryStatus": "IN_STOCK",
     "inventoryQuantity": 100,
     "images": ["https://cdn.example.com/mouse.jpg"],
