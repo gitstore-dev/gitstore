@@ -93,9 +93,14 @@ type Query {
   categoryById(id: ID!): Category
 
   """
-  List all categories (hierarchical structure)
+  List categories with Relay cursor-based pagination
   """
-  categories: [Category!]!
+  categories(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CategoryConnection!
 
   """
   Get collection by slug
@@ -108,9 +113,14 @@ type Query {
   collectionById(id: ID!): Collection
 
   """
-  List all collections
+  List collections with Relay cursor-based pagination
   """
-  collections: [Collection!]!
+  collections(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CollectionConnection!
 
   """
   Get current catalog version (release tag)

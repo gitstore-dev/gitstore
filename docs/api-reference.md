@@ -273,25 +273,35 @@ query {
 
 ### categories
 
-Get all categories in hierarchical structure.
+Get categories in hierarchical structure with Relay cursor-based pagination.
 
 ```graphql
 query {
-  categories {
-    id
-    name
-    displayOrder
-    parent {
-      name
+  categories(first: 20) {
+    edges {
+      cursor
+      node {
+        id
+        name
+        displayOrder
+        parent {
+          name
+        }
+        children {
+          name
+        }
+      }
     }
-    children {
-      name
+    pageInfo {
+      hasNextPage
+      endCursor
     }
+    totalCount
   }
 }
 ```
 
-**Returns**: `[Category!]!`
+**Returns**: `CategoryConnection!`
 
 ---
 
@@ -344,20 +354,30 @@ query {
 
 ### collections
 
-Get all collections.
+Get collections with Relay cursor-based pagination.
 
 ```graphql
 query {
-  collections {
-    id
-    name
-    slug
-    displayOrder
+  collections(first: 20) {
+    edges {
+      cursor
+      node {
+        id
+        name
+        slug
+        displayOrder
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
   }
 }
 ```
 
-**Returns**: `[Collection!]!`
+**Returns**: `CollectionConnection!`
 
 ---
 
@@ -882,9 +902,9 @@ type Collection implements Node {
 }
 ```
 
-### ProductConnection
+### Connections
 
-Relay-style connection for cursor-based pagination.
+Relay-style connections for cursor-based pagination.
 
 ```graphql
 type ProductConnection {
@@ -896,6 +916,39 @@ type ProductConnection {
 type ProductEdge {
   cursor: String!
   node: Product!
+}
+
+type CategoryConnection {
+  edges: [CategoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type CategoryEdge {
+  cursor: String!
+  node: Category!
+}
+
+type CollectionConnection {
+  edges: [CollectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type CollectionEdge {
+  cursor: String!
+  node: Collection!
+}
+
+type NamespaceConnection {
+  edges: [NamespaceEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NamespaceEdge {
+  cursor: String!
+  node: Namespace!
 }
 
 type PageInfo {
@@ -1201,24 +1254,28 @@ query ListProducts(
 
 ```graphql
 query GetCategoryHierarchy {
-  categories {
-    id
-    name
-    displayOrder
-    parent {
-      id
-      name
-    }
-    children {
-      id
-      name
-      displayOrder
-    }
-    products(first: 5) {
-      totalCount
-      edges {
-        node {
-          title
+  categories(first: 50) {
+    edges {
+      node {
+        id
+        name
+        displayOrder
+        parent {
+          id
+          name
+        }
+        children {
+          id
+          name
+          displayOrder
+        }
+        products(first: 5) {
+          totalCount
+          edges {
+            node {
+              title
+            }
+          }
         }
       }
     }

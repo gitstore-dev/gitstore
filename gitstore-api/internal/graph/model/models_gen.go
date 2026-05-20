@@ -88,6 +88,24 @@ func (Category) IsNode() {}
 // Globally unique identifier (format: [type]_[base62])
 func (this Category) GetID() string { return this.ID }
 
+// Connection type for paginated categories (Relay pattern)
+type CategoryConnection struct {
+	// List of category edges
+	Edges []*CategoryEdge `json:"edges"`
+	// Pagination information
+	PageInfo *PageInfo `json:"pageInfo"`
+	// Total count of categories
+	TotalCount int32 `json:"totalCount"`
+}
+
+// Edge type for Category connection (Relay pattern)
+type CategoryEdge struct {
+	// Cursor for pagination
+	Cursor string `json:"cursor"`
+	// The category node
+	Node *Category `json:"node"`
+}
+
 // Optimistic lock conflict for category
 type CategoryOptimisticLockConflict struct {
 	// Current version in database
@@ -126,6 +144,24 @@ func (Collection) IsNode() {}
 
 // Globally unique identifier (format: [type]_[base62])
 func (this Collection) GetID() string { return this.ID }
+
+// Connection type for paginated collections (Relay pattern)
+type CollectionConnection struct {
+	// List of collection edges
+	Edges []*CollectionEdge `json:"edges"`
+	// Pagination information
+	PageInfo *PageInfo `json:"pageInfo"`
+	// Total count of collections
+	TotalCount int32 `json:"totalCount"`
+}
+
+// Edge type for Collection connection (Relay pattern)
+type CollectionEdge struct {
+	// Cursor for pagination
+	Cursor string `json:"cursor"`
+	// The collection node
+	Node *Collection `json:"node"`
+}
 
 // Optimistic lock conflict for collection
 type CollectionOptimisticLockConflict struct {
@@ -387,6 +423,24 @@ func (Namespace) IsNode() {}
 
 // Globally unique identifier (format: [type]_[base62])
 func (this Namespace) GetID() string { return this.ID }
+
+// Connection type for paginated namespaces (Relay pattern).
+type NamespaceConnection struct {
+	// List of namespace edges.
+	Edges []*NamespaceEdge `json:"edges"`
+	// Pagination information.
+	PageInfo *PageInfo `json:"pageInfo"`
+	// Total count of namespaces.
+	TotalCount int32 `json:"totalCount"`
+}
+
+// Edge type for Namespace connection (Relay pattern).
+type NamespaceEdge struct {
+	// Cursor for pagination.
+	Cursor string `json:"cursor"`
+	// The namespace node.
+	Node *Namespace `json:"node"`
+}
 
 // Optimistic lock conflict information
 type OptimisticLockConflict struct {

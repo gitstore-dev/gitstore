@@ -119,6 +119,38 @@ func TestGraphQLHandlerAcceptsBearerTokenForNamespaceMutation(t *testing.T) {
 	assert.Equal(t, "create-alice", response.Data.CreateNamespace.ClientMutationID)
 	assert.Equal(t, "alice", response.Data.CreateNamespace.Namespace.Identifier)
 	assert.Equal(t, "admin", response.Data.CreateNamespace.Namespace.CreatedBy)
+
+	listReq := httptest.NewRequest(http.MethodPost, "/graphql", strings.NewReader(`{
+		"query": "query { namespaces(first: 10) { edges { cursor node { identifier } } pageInfo { hasNextPage endCursor } totalCount } }"
+	}`))
+	listReq.Header.Set("Content-Type", "application/json")
+	listW := httptest.NewRecorder()
+
+	handler.ServeHTTP(listW, listReq)
+
+	require.Equal(t, http.StatusOK, listW.Code)
+	var listResponse struct {
+		Data struct {
+			Namespaces struct {
+				Edges []struct {
+					Cursor string `json:"cursor"`
+					Node   struct {
+						Identifier string `json:"identifier"`
+					} `json:"node"`
+				} `json:"edges"`
+				TotalCount int `json:"totalCount"`
+			} `json:"namespaces"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	require.NoError(t, json.Unmarshal(listW.Body.Bytes(), &listResponse))
+	require.Empty(t, listResponse.Errors)
+	require.Len(t, listResponse.Data.Namespaces.Edges, 1)
+	assert.NotEmpty(t, listResponse.Data.Namespaces.Edges[0].Cursor)
+	assert.Equal(t, "alice", listResponse.Data.Namespaces.Edges[0].Node.Identifier)
+	assert.Equal(t, 1, listResponse.Data.Namespaces.TotalCount)
 }
 
 func TestGraphQLHandlerRejectsNamespaceMutationWithoutBearerToken(t *testing.T) {

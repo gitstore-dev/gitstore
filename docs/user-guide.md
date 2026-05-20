@@ -364,13 +364,17 @@ query {
 ```graphql
 query {
   categories {
-    id
-    name
-    parent {
-      name
-    }
-    children {
-      name
+    edges {
+      node {
+        id
+        name
+        parent {
+          name
+        }
+        children {
+          name
+        }
+      }
     }
   }
 }

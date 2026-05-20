@@ -268,11 +268,15 @@ git push origin main v0.3.0
 ```graphql
 query CategoryTree {
   categories {
-    name
-    slug
-    children {
-      name
-      slug
+    edges {
+      node {
+        name
+        slug
+        children {
+          name
+          slug
+        }
+      }
     }
   }
 }
@@ -282,18 +286,22 @@ query CategoryTree {
 ```json
 {
   "data": {
-    "categories": [
-      {
-        "name": "Electronics",
-        "slug": "electronics",
-        "children": [
-          {
-            "name": "Computers",
-            "slug": "computers"
+    "categories": {
+      "edges": [
+        {
+          "node": {
+            "name": "Electronics",
+            "slug": "electronics",
+            "children": [
+              {
+                "name": "Computers",
+                "slug": "computers"
+              }
+            ]
           }
-        ]
-      }
-    ]
+        }
+      ]
+    }
   },
   "errors": []
 }

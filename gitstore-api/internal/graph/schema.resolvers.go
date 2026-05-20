@@ -374,20 +374,14 @@ func (r *queryResolver) CategoryByID(ctx context.Context, id string) (*model.Cat
 	return CatalogCategoryToGraphQL(catalogCategory), nil
 }
 
-// Categories returns all categories in hierarchical structure
-func (r *queryResolver) Categories(ctx context.Context) ([]*model.Category, error) {
+// Categories returns categories as a Relay connection.
+func (r *queryResolver) Categories(ctx context.Context, first *int32, after *string, last *int32, before *string) (*model.CategoryConnection, error) {
 	catalogCategories, err := r.service.GetCategories(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get categories: %w", err)
 	}
 
-	// Convert to GraphQL models
-	categories := make([]*model.Category, len(catalogCategories))
-	for i, cat := range catalogCategories {
-		categories[i] = CatalogCategoryToGraphQL(cat)
-	}
-
-	return categories, nil
+	return PaginateCategories(catalogCategories, first, after, last, before)
 }
 
 // Collection returns a collection by slug
@@ -408,20 +402,14 @@ func (r *queryResolver) CollectionByID(ctx context.Context, id string) (*model.C
 	return CatalogCollectionToGraphQL(catalogCollection), nil
 }
 
-// Collections returns all collections
-func (r *queryResolver) Collections(ctx context.Context) ([]*model.Collection, error) {
+// Collections returns collections as a Relay connection.
+func (r *queryResolver) Collections(ctx context.Context, first *int32, after *string, last *int32, before *string) (*model.CollectionConnection, error) {
 	catalogCollections, err := r.service.GetCollections(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get collections: %w", err)
 	}
 
-	// Convert to GraphQL models
-	collections := make([]*model.Collection, len(catalogCollections))
-	for i, coll := range catalogCollections {
-		collections[i] = CatalogCollectionToGraphQL(coll)
-	}
-
-	return collections, nil
+	return PaginateCollections(catalogCollections, first, after, last, before)
 }
 
 // CatalogVersion is the resolver for the catalogVersion field.

@@ -7,7 +7,7 @@
 # In Query:
 #   namespace(identifier: String!): Namespace
 #   namespaceById(id: ID!): Namespace
-#   namespaces: [Namespace!]!
+#   namespaces(first: Int, after: String, last: Int, before: String): NamespaceConnection!
 #
 # In Mutation:
 #   createNamespace(input: CreateNamespaceInput!): CreateNamespacePayload!
@@ -99,6 +99,41 @@ type Namespace implements Node {
   Username of the caller who last modified this namespace.
   """
   updatedBy: String!
+}
+
+"""
+Edge type for Namespace connection (Relay pattern).
+"""
+type NamespaceEdge {
+  """
+  Cursor for pagination.
+  """
+  cursor: String!
+
+  """
+  The namespace node.
+  """
+  node: Namespace!
+}
+
+"""
+Connection type for paginated namespaces (Relay pattern).
+"""
+type NamespaceConnection {
+  """
+  List of namespace edges.
+  """
+  edges: [NamespaceEdge!]!
+
+  """
+  Pagination information.
+  """
+  pageInfo: PageInfo!
+
+  """
+  Total count of namespaces.
+  """
+  totalCount: Int!
 }
 
 # ============================================================================
@@ -255,13 +290,23 @@ type DeleteNamespacePayload {
 
 # --- List all namespaces ---
 # query ListNamespaces {
-#   namespaces {
-#     id
-#     identifier
-#     displayName
-#     tier
-#     createdAt
-#     createdBy
+#   namespaces(first: 20) {
+#     edges {
+#       cursor
+#       node {
+#         id
+#         identifier
+#         displayName
+#         tier
+#         createdAt
+#         createdBy
+#       }
+#     }
+#     pageInfo {
+#       hasNextPage
+#       endCursor
+#     }
+#     totalCount
 #   }
 # }
 

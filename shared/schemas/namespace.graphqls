@@ -82,6 +82,41 @@ type Namespace implements Node {
 }
 
 """
+Edge type for Namespace connection (Relay pattern).
+"""
+type NamespaceEdge {
+  """
+  Cursor for pagination.
+  """
+  cursor: String!
+
+  """
+  The namespace node.
+  """
+  node: Namespace!
+}
+
+"""
+Connection type for paginated namespaces (Relay pattern).
+"""
+type NamespaceConnection {
+  """
+  List of namespace edges.
+  """
+  edges: [NamespaceEdge!]!
+
+  """
+  Pagination information.
+  """
+  pageInfo: PageInfo!
+
+  """
+  Total count of namespaces.
+  """
+  totalCount: Int!
+}
+
+"""
 Input for creating a new namespace.
 """
 input CreateNamespaceInput {
@@ -179,7 +214,12 @@ extend type Query {
   """
   List all namespaces.
   """
-  namespaces: [Namespace!]!
+  namespaces(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): NamespaceConnection!
 }
 
 extend type Mutation {

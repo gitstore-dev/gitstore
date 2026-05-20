@@ -119,7 +119,7 @@ curl -s -X POST http://localhost:4000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "query": "query { namespaces { id identifier displayName tier createdAt createdBy } }"
+    "query": "query { namespaces(first: 20) { edges { cursor node { id identifier displayName tier createdAt createdBy } } pageInfo { hasNextPage endCursor } totalCount } }"
   }' | jq .
 ```
 

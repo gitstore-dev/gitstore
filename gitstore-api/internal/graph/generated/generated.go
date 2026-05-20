@@ -77,6 +77,17 @@ type ComplexityRoot struct {
 		UpdatedAt    func(childComplexity int) int
 	}
 
+	CategoryConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	CategoryEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	CategoryOptimisticLockConflict struct {
 		AttemptedVersion func(childComplexity int) int
 		Current          func(childComplexity int) int
@@ -94,6 +105,17 @@ type ComplexityRoot struct {
 		Products     func(childComplexity int, first *int32, after *string, last *int32, before *string) int
 		Slug         func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
+	}
+
+	CollectionConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	CollectionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	CollectionOptimisticLockConflict struct {
@@ -186,6 +208,17 @@ type ComplexityRoot struct {
 		UpdatedBy          func(childComplexity int) int
 	}
 
+	NamespaceConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	NamespaceEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	OptimisticLockConflict struct {
 		AttemptedVersion func(childComplexity int) int
 		Current          func(childComplexity int) int
@@ -235,15 +268,15 @@ type ComplexityRoot struct {
 
 	Query struct {
 		CatalogVersion func(childComplexity int) int
-		Categories     func(childComplexity int) int
+		Categories     func(childComplexity int, first *int32, after *string, last *int32, before *string) int
 		Category       func(childComplexity int, slug string) int
 		CategoryByID   func(childComplexity int, id string) int
 		Collection     func(childComplexity int, slug string) int
 		CollectionByID func(childComplexity int, id string) int
-		Collections    func(childComplexity int) int
+		Collections    func(childComplexity int, first *int32, after *string, last *int32, before *string) int
 		Namespace      func(childComplexity int, identifier string) int
 		NamespaceByID  func(childComplexity int, id string) int
-		Namespaces     func(childComplexity int) int
+		Namespaces     func(childComplexity int, first *int32, after *string, last *int32, before *string) int
 		Node           func(childComplexity int, id string) int
 		Nodes          func(childComplexity int, ids []string) int
 		Product        func(childComplexity int, sku string) int
@@ -327,14 +360,14 @@ type QueryResolver interface {
 	Products(ctx context.Context, first *int32, after *string, last *int32, before *string, filter *model.ProductFilter) (*model.ProductConnection, error)
 	Category(ctx context.Context, slug string) (*model.Category, error)
 	CategoryByID(ctx context.Context, id string) (*model.Category, error)
-	Categories(ctx context.Context) ([]*model.Category, error)
+	Categories(ctx context.Context, first *int32, after *string, last *int32, before *string) (*model.CategoryConnection, error)
 	Collection(ctx context.Context, slug string) (*model.Collection, error)
 	CollectionByID(ctx context.Context, id string) (*model.Collection, error)
-	Collections(ctx context.Context) ([]*model.Collection, error)
+	Collections(ctx context.Context, first *int32, after *string, last *int32, before *string) (*model.CollectionConnection, error)
 	CatalogVersion(ctx context.Context) (*model.CatalogVersion, error)
 	Namespace(ctx context.Context, identifier string) (*model.Namespace, error)
 	NamespaceByID(ctx context.Context, id string) (*model.Namespace, error)
-	Namespaces(ctx context.Context) ([]*model.Namespace, error)
+	Namespaces(ctx context.Context, first *int32, after *string, last *int32, before *string) (*model.NamespaceConnection, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -504,6 +537,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Category.UpdatedAt(childComplexity), true
 
+	case "CategoryConnection.edges":
+		if e.ComplexityRoot.CategoryConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CategoryConnection.Edges(childComplexity), true
+	case "CategoryConnection.pageInfo":
+		if e.ComplexityRoot.CategoryConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CategoryConnection.PageInfo(childComplexity), true
+	case "CategoryConnection.totalCount":
+		if e.ComplexityRoot.CategoryConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CategoryConnection.TotalCount(childComplexity), true
+
+	case "CategoryEdge.cursor":
+		if e.ComplexityRoot.CategoryEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CategoryEdge.Cursor(childComplexity), true
+	case "CategoryEdge.node":
+		if e.ComplexityRoot.CategoryEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CategoryEdge.Node(childComplexity), true
+
 	case "CategoryOptimisticLockConflict.attemptedVersion":
 		if e.ComplexityRoot.CategoryOptimisticLockConflict.AttemptedVersion == nil {
 			break
@@ -588,6 +653,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Collection.UpdatedAt(childComplexity), true
+
+	case "CollectionConnection.edges":
+		if e.ComplexityRoot.CollectionConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CollectionConnection.Edges(childComplexity), true
+	case "CollectionConnection.pageInfo":
+		if e.ComplexityRoot.CollectionConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CollectionConnection.PageInfo(childComplexity), true
+	case "CollectionConnection.totalCount":
+		if e.ComplexityRoot.CollectionConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CollectionConnection.TotalCount(childComplexity), true
+
+	case "CollectionEdge.cursor":
+		if e.ComplexityRoot.CollectionEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CollectionEdge.Cursor(childComplexity), true
+	case "CollectionEdge.node":
+		if e.ComplexityRoot.CollectionEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CollectionEdge.Node(childComplexity), true
 
 	case "CollectionOptimisticLockConflict.attemptedVersion":
 		if e.ComplexityRoot.CollectionOptimisticLockConflict.AttemptedVersion == nil {
@@ -993,6 +1090,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Namespace.UpdatedBy(childComplexity), true
 
+	case "NamespaceConnection.edges":
+		if e.ComplexityRoot.NamespaceConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NamespaceConnection.Edges(childComplexity), true
+	case "NamespaceConnection.pageInfo":
+		if e.ComplexityRoot.NamespaceConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NamespaceConnection.PageInfo(childComplexity), true
+	case "NamespaceConnection.totalCount":
+		if e.ComplexityRoot.NamespaceConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NamespaceConnection.TotalCount(childComplexity), true
+
+	case "NamespaceEdge.cursor":
+		if e.ComplexityRoot.NamespaceEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NamespaceEdge.Cursor(childComplexity), true
+	case "NamespaceEdge.node":
+		if e.ComplexityRoot.NamespaceEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NamespaceEdge.Node(childComplexity), true
+
 	case "OptimisticLockConflict.attemptedVersion":
 		if e.ComplexityRoot.OptimisticLockConflict.AttemptedVersion == nil {
 			break
@@ -1184,7 +1313,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.ComplexityRoot.Query.Categories(childComplexity), true
+		args, err := ec.field_Query_categories_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Categories(childComplexity, args["first"].(*int32), args["after"].(*string), args["last"].(*int32), args["before"].(*string)), true
 	case "Query.category":
 		if e.ComplexityRoot.Query.Category == nil {
 			break
@@ -1234,7 +1368,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.ComplexityRoot.Query.Collections(childComplexity), true
+		args, err := ec.field_Query_collections_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Collections(childComplexity, args["first"].(*int32), args["after"].(*string), args["last"].(*int32), args["before"].(*string)), true
 
 	case "Query.namespace":
 		if e.ComplexityRoot.Query.Namespace == nil {
@@ -1263,7 +1402,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.ComplexityRoot.Query.Namespaces(childComplexity), true
+		args, err := ec.field_Query_namespaces_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Namespaces(childComplexity, args["first"].(*int32), args["after"].(*string), args["last"].(*int32), args["before"].(*string)), true
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
 			break
@@ -1742,6 +1886,41 @@ type Category implements Node {
   depth: Int!
 }
 
+"""
+Edge type for Category connection (Relay pattern)
+"""
+type CategoryEdge {
+  """
+  Cursor for pagination
+  """
+  cursor: String!
+
+  """
+  The category node
+  """
+  node: Category!
+}
+
+"""
+Connection type for paginated categories (Relay pattern)
+"""
+type CategoryConnection {
+  """
+  List of category edges
+  """
+  edges: [CategoryEdge!]!
+
+  """
+  Pagination information
+  """
+  pageInfo: PageInfo!
+
+  """
+  Total count of categories
+  """
+  totalCount: Int!
+}
+
 # ============================================================================
 # Mutations
 # ============================================================================
@@ -2021,6 +2200,41 @@ type Collection implements Node {
   Number of products in this collection
   """
   productCount: Int!
+}
+
+"""
+Edge type for Collection connection (Relay pattern)
+"""
+type CollectionEdge {
+  """
+  Cursor for pagination
+  """
+  cursor: String!
+
+  """
+  The collection node
+  """
+  node: Collection!
+}
+
+"""
+Connection type for paginated collections (Relay pattern)
+"""
+type CollectionConnection {
+  """
+  List of collection edges
+  """
+  edges: [CollectionEdge!]!
+
+  """
+  Pagination information
+  """
+  pageInfo: PageInfo!
+
+  """
+  Total count of collections
+  """
+  totalCount: Int!
 }
 
 # ============================================================================
@@ -2405,6 +2619,41 @@ type Namespace implements Node {
 }
 
 """
+Edge type for Namespace connection (Relay pattern).
+"""
+type NamespaceEdge {
+  """
+  Cursor for pagination.
+  """
+  cursor: String!
+
+  """
+  The namespace node.
+  """
+  node: Namespace!
+}
+
+"""
+Connection type for paginated namespaces (Relay pattern).
+"""
+type NamespaceConnection {
+  """
+  List of namespace edges.
+  """
+  edges: [NamespaceEdge!]!
+
+  """
+  Pagination information.
+  """
+  pageInfo: PageInfo!
+
+  """
+  Total count of namespaces.
+  """
+  totalCount: Int!
+}
+
+"""
 Input for creating a new namespace.
 """
 input CreateNamespaceInput {
@@ -2502,7 +2751,12 @@ extend type Query {
   """
   List all namespaces.
   """
-  namespaces: [Namespace!]!
+  namespaces(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): NamespaceConnection!
 }
 
 extend type Mutation {
@@ -2966,9 +3220,14 @@ type Query {
   categoryById(id: ID!): Category
 
   """
-  List all categories (hierarchical structure)
+  List categories with Relay cursor-based pagination
   """
-  categories: [Category!]!
+  categories(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CategoryConnection!
 
   """
   Get collection by slug
@@ -2981,9 +3240,14 @@ type Query {
   collectionById(id: ID!): Collection
 
   """
-  List all collections
+  List collections with Relay cursor-based pagination
   """
-  collections: [Collection!]!
+  collections(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CollectionConnection!
 
   """
   Get current catalog version (release tag)
@@ -3208,6 +3472,28 @@ func (ec *executionContext) childFields_Category(ctx context.Context, field grap
 	return nil, fmt.Errorf("no field named %q was found under type Category", field.Name)
 }
 
+func (ec *executionContext) childFields_CategoryConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_CategoryConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_CategoryConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_CategoryConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CategoryConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_CategoryEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "cursor":
+		return ec.fieldContext_CategoryEdge_cursor(ctx, field)
+	case "node":
+		return ec.fieldContext_CategoryEdge_node(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CategoryEdge", field.Name)
+}
+
 func (ec *executionContext) childFields_CategoryOptimisticLockConflict(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "currentVersion":
@@ -3244,6 +3530,28 @@ func (ec *executionContext) childFields_Collection(ctx context.Context, field gr
 		return ec.fieldContext_Collection_productCount(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Collection", field.Name)
+}
+
+func (ec *executionContext) childFields_CollectionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_CollectionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_CollectionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_CollectionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CollectionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_CollectionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "cursor":
+		return ec.fieldContext_CollectionEdge_cursor(ctx, field)
+	case "node":
+		return ec.fieldContext_CollectionEdge_node(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CollectionEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_CollectionOptimisticLockConflict(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -3384,6 +3692,28 @@ func (ec *executionContext) childFields_Namespace(ctx context.Context, field gra
 		return ec.fieldContext_Namespace_updatedBy(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Namespace", field.Name)
+}
+
+func (ec *executionContext) childFields_NamespaceConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_NamespaceConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_NamespaceConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_NamespaceConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NamespaceConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_NamespaceEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "cursor":
+		return ec.fieldContext_NamespaceEdge_cursor(ctx, field)
+	case "node":
+		return ec.fieldContext_NamespaceEdge_node(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NamespaceEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_OptimisticLockConflict(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -4000,6 +4330,44 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_categories_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg3
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_categoryById_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4056,6 +4424,44 @@ func (ec *executionContext) field_Query_collection_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_collections_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg3
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_namespaceById_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4081,6 +4487,44 @@ func (ec *executionContext) field_Query_namespace_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["identifier"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_namespaces_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int32, error) {
+			return ec.unmarshalOInt2ᚖint32(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg3
 	return args, nil
 }
 
@@ -4859,6 +5303,148 @@ func (ec *executionContext) fieldContext_Category_depth(_ context.Context, field
 	return graphql.NewScalarFieldContext("Category", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
+func (ec *executionContext) _CategoryConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.CategoryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CategoryConnection_edges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.CategoryEdge) graphql.Marshaler {
+			return ec.marshalNCategoryEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryEdgeᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CategoryConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CategoryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CategoryEdge(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CategoryConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.CategoryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CategoryConnection_pageInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+			return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐPageInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CategoryConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CategoryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PageInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CategoryConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.CategoryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CategoryConnection_totalCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CategoryConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CategoryConnection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _CategoryEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.CategoryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CategoryEdge_cursor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CategoryEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CategoryEdge", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CategoryEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.CategoryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CategoryEdge_node(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Category) graphql.Marshaler {
+			return ec.marshalNCategory2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategory(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CategoryEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CategoryEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Category(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CategoryOptimisticLockConflict_currentVersion(ctx context.Context, field graphql.CollectedField, obj *model.CategoryOptimisticLockConflict) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5186,6 +5772,148 @@ func (ec *executionContext) _Collection_productCount(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_Collection_productCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Collection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _CollectionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.CollectionConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CollectionConnection_edges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.CollectionEdge) graphql.Marshaler {
+			return ec.marshalNCollectionEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionEdgeᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CollectionConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CollectionConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CollectionEdge(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CollectionConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.CollectionConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CollectionConnection_pageInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+			return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐPageInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CollectionConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CollectionConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PageInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CollectionConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.CollectionConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CollectionConnection_totalCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CollectionConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CollectionConnection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _CollectionEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.CollectionEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CollectionEdge_cursor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CollectionEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CollectionEdge", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CollectionEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.CollectionEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CollectionEdge_node(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Collection) graphql.Marshaler {
+			return ec.marshalNCollection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollection(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CollectionEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CollectionEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Collection(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _CollectionOptimisticLockConflict_currentVersion(ctx context.Context, field graphql.CollectedField, obj *model.CollectionOptimisticLockConflict) (ret graphql.Marshaler) {
@@ -6772,6 +7500,148 @@ func (ec *executionContext) fieldContext_Namespace_updatedBy(_ context.Context, 
 	return graphql.NewScalarFieldContext("Namespace", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _NamespaceConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NamespaceConnection_edges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.NamespaceEdge) graphql.Marshaler {
+			return ec.marshalNNamespaceEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceEdgeᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NamespaceConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_NamespaceEdge(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NamespaceConnection_pageInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+			return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐPageInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NamespaceConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PageInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NamespaceConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NamespaceConnection_totalCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NamespaceConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NamespaceConnection", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _NamespaceEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NamespaceEdge_cursor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NamespaceEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NamespaceEdge", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NamespaceEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.NamespaceEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NamespaceEdge_node(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Namespace) graphql.Marshaler {
+			return ec.marshalNNamespace2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespace(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NamespaceEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NamespaceEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Namespace(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OptimisticLockConflict_currentVersion(ctx context.Context, field graphql.CollectedField, obj *model.OptimisticLockConflict) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7819,25 +8689,37 @@ func (ec *executionContext) _Query_categories(ctx context.Context, field graphql
 			return ec.fieldContext_Query_categories(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Categories(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Categories(ctx, fc.Args["first"].(*int32), fc.Args["after"].(*string), fc.Args["last"].(*int32), fc.Args["before"].(*string))
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model.Category) graphql.Marshaler {
-			return ec.marshalNCategory2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CategoryConnection) graphql.Marshaler {
+			return ec.marshalNCategoryConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryConnection(ctx, selections, v)
 		},
 		true,
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Query_categories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_categories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Category(ctx, field)
+			return ec.childFields_CategoryConnection(ctx, field)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_categories_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7939,25 +8821,37 @@ func (ec *executionContext) _Query_collections(ctx context.Context, field graphq
 			return ec.fieldContext_Query_collections(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Collections(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Collections(ctx, fc.Args["first"].(*int32), fc.Args["after"].(*string), fc.Args["last"].(*int32), fc.Args["before"].(*string))
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model.Collection) graphql.Marshaler {
-			return ec.marshalNCollection2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CollectionConnection) graphql.Marshaler {
+			return ec.marshalNCollectionConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionConnection(ctx, selections, v)
 		},
 		true,
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Query_collections(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_collections(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Collection(ctx, field)
+			return ec.childFields_CollectionConnection(ctx, field)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_collections_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8091,25 +8985,37 @@ func (ec *executionContext) _Query_namespaces(ctx context.Context, field graphql
 			return ec.fieldContext_Query_namespaces(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Namespaces(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Namespaces(ctx, fc.Args["first"].(*int32), fc.Args["after"].(*string), fc.Args["last"].(*int32), fc.Args["before"].(*string))
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model.Namespace) graphql.Marshaler {
-			return ec.marshalNNamespace2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.NamespaceConnection) graphql.Marshaler {
+			return ec.marshalNNamespaceConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceConnection(ctx, selections, v)
 		},
 		true,
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Query_namespaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_namespaces(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Namespace(ctx, field)
+			return ec.childFields_NamespaceConnection(ctx, field)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_namespaces_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -11085,6 +11991,99 @@ func (ec *executionContext) _Category(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var categoryConnectionImplementors = []string{"CategoryConnection"}
+
+func (ec *executionContext) _CategoryConnection(ctx context.Context, sel ast.SelectionSet, obj *model.CategoryConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, categoryConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CategoryConnection")
+		case "edges":
+			out.Values[i] = ec._CategoryConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._CategoryConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._CategoryConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var categoryEdgeImplementors = []string{"CategoryEdge"}
+
+func (ec *executionContext) _CategoryEdge(ctx context.Context, sel ast.SelectionSet, obj *model.CategoryEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, categoryEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CategoryEdge")
+		case "cursor":
+			out.Values[i] = ec._CategoryEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._CategoryEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var categoryOptimisticLockConflictImplementors = []string{"CategoryOptimisticLockConflict"}
 
 func (ec *executionContext) _CategoryOptimisticLockConflict(ctx context.Context, sel ast.SelectionSet, obj *model.CategoryOptimisticLockConflict) graphql.Marshaler {
@@ -11222,6 +12221,99 @@ func (ec *executionContext) _Collection(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._Collection_productCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var collectionConnectionImplementors = []string{"CollectionConnection"}
+
+func (ec *executionContext) _CollectionConnection(ctx context.Context, sel ast.SelectionSet, obj *model.CollectionConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, collectionConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CollectionConnection")
+		case "edges":
+			out.Values[i] = ec._CollectionConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._CollectionConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._CollectionConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var collectionEdgeImplementors = []string{"CollectionEdge"}
+
+func (ec *executionContext) _CollectionEdge(ctx context.Context, sel ast.SelectionSet, obj *model.CollectionEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, collectionEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CollectionEdge")
+		case "cursor":
+			out.Values[i] = ec._CollectionEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._CollectionEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -11899,6 +12991,99 @@ func (ec *executionContext) _Namespace(ctx context.Context, sel ast.SelectionSet
 			}
 		case "updatedBy":
 			out.Values[i] = ec._Namespace_updatedBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var namespaceConnectionImplementors = []string{"NamespaceConnection"}
+
+func (ec *executionContext) _NamespaceConnection(ctx context.Context, sel ast.SelectionSet, obj *model.NamespaceConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, namespaceConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NamespaceConnection")
+		case "edges":
+			out.Values[i] = ec._NamespaceConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._NamespaceConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._NamespaceConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var namespaceEdgeImplementors = []string{"NamespaceEdge"}
+
+func (ec *executionContext) _NamespaceEdge(ctx context.Context, sel ast.SelectionSet, obj *model.NamespaceEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, namespaceEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NamespaceEdge")
+		case "cursor":
+			out.Values[i] = ec._NamespaceEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._NamespaceEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -13351,6 +14536,46 @@ func (ec *executionContext) marshalNCategory2ᚖgithubᚗcomᚋgitstoreᚑdevᚋ
 	return ec._Category(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCategoryConnection2githubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryConnection(ctx context.Context, sel ast.SelectionSet, v model.CategoryConnection) graphql.Marshaler {
+	return ec._CategoryConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCategoryConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryConnection(ctx context.Context, sel ast.SelectionSet, v *model.CategoryConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CategoryConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCategoryEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CategoryEdge) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCategoryEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryEdge(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCategoryEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCategoryEdge(ctx context.Context, sel ast.SelectionSet, v *model.CategoryEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CategoryEdge(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNCollection2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Collection) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -13375,6 +14600,46 @@ func (ec *executionContext) marshalNCollection2ᚖgithubᚗcomᚋgitstoreᚑdev�
 		return graphql.Null
 	}
 	return ec._Collection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCollectionConnection2githubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v model.CollectionConnection) graphql.Marshaler {
+	return ec._CollectionConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCollectionConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v *model.CollectionConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CollectionConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCollectionEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CollectionEdge) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCollectionEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionEdge(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCollectionEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCollectionEdge(ctx context.Context, sel ast.SelectionSet, v *model.CollectionEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CollectionEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateCategoryInput2githubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐCreateCategoryInput(ctx context.Context, v any) (model.CreateCategoryInput, error) {
@@ -13665,11 +14930,35 @@ func (ec *executionContext) marshalNLogoutPayload2ᚖgithubᚗcomᚋgitstoreᚑd
 	return ec._LogoutPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNNamespace2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Namespace) graphql.Marshaler {
+func (ec *executionContext) marshalNNamespace2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespace(ctx context.Context, sel ast.SelectionSet, v *model.Namespace) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Namespace(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNamespaceConnection2githubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceConnection(ctx context.Context, sel ast.SelectionSet, v model.NamespaceConnection) graphql.Marshaler {
+	return ec._NamespaceConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNamespaceConnection2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceConnection(ctx context.Context, sel ast.SelectionSet, v *model.NamespaceConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NamespaceConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNamespaceEdge2ᚕᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NamespaceEdge) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNNamespace2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespace(ctx, sel, v[i])
+		return ec.marshalNNamespaceEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceEdge(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -13681,14 +14970,14 @@ func (ec *executionContext) marshalNNamespace2ᚕᚖgithubᚗcomᚋgitstoreᚑde
 	return ret
 }
 
-func (ec *executionContext) marshalNNamespace2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespace(ctx context.Context, sel ast.SelectionSet, v *model.Namespace) graphql.Marshaler {
+func (ec *executionContext) marshalNNamespaceEdge2ᚖgithubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceEdge(ctx context.Context, sel ast.SelectionSet, v *model.NamespaceEdge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._Namespace(ctx, sel, v)
+	return ec._NamespaceEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNNamespaceTier2githubᚗcomᚋgitstoreᚑdevᚋgitstoreᚋapiᚋinternalᚋgraphᚋmodelᚐNamespaceTier(ctx context.Context, v any) (model.NamespaceTier, error) {

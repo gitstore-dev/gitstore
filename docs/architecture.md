@@ -407,7 +407,13 @@ mutation {
 
 # List all namespaces
 query {
-  namespaces { id identifier tier createdBy }
+  namespaces(first: 20) {
+    edges {
+      node { id identifier tier createdBy }
+    }
+    pageInfo { hasNextPage endCursor }
+    totalCount
+  }
 }
 
 # Get namespace by identifier
