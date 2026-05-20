@@ -114,7 +114,8 @@ type ComplexityRoot struct {
 	}
 
 	CreateNamespacePayload struct {
-		Namespace func(childComplexity int) int
+		ClientMutationID func(childComplexity int) int
+		Namespace        func(childComplexity int) int
 	}
 
 	CreateProductPayload struct {
@@ -134,6 +135,7 @@ type ComplexityRoot struct {
 	}
 
 	DeleteNamespacePayload struct {
+		ClientMutationID  func(childComplexity int) int
 		DeletedIdentifier func(childComplexity int) int
 	}
 
@@ -638,6 +640,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.CreateCollectionPayload.Collection(childComplexity), true
 
+	case "CreateNamespacePayload.clientMutationId":
+		if e.ComplexityRoot.CreateNamespacePayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateNamespacePayload.ClientMutationID(childComplexity), true
 	case "CreateNamespacePayload.namespace":
 		if e.ComplexityRoot.CreateNamespacePayload.Namespace == nil {
 			break
@@ -690,6 +698,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DeleteCollectionPayload.DeletedCollectionID(childComplexity), true
 
+	case "DeleteNamespacePayload.clientMutationId":
+		if e.ComplexityRoot.DeleteNamespacePayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteNamespacePayload.ClientMutationID(childComplexity), true
 	case "DeleteNamespacePayload.deletedIdentifier":
 		if e.ComplexityRoot.DeleteNamespacePayload.DeletedIdentifier == nil {
 			break
@@ -2395,6 +2409,11 @@ Input for creating a new namespace.
 """
 input CreateNamespaceInput {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The human-readable identifier for the namespace.
   Must be globally unique across all tiers.
   DNS label format: lowercase alphanumeric and hyphens, 1–63 characters.
@@ -2427,6 +2446,11 @@ Input for deleting a namespace.
 """
 input DeleteNamespaceInput {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The identifier of the namespace to delete.
   Deletion is blocked if any repositories exist within the namespace.
   Requires the caller to be the namespace owner (createdBy) or isAdmin.
@@ -2439,6 +2463,11 @@ Payload returned after successfully creating a namespace.
 """
 type CreateNamespacePayload {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The newly created namespace.
   """
   namespace: Namespace!
@@ -2448,6 +2477,11 @@ type CreateNamespacePayload {
 Payload returned after successfully deleting a namespace.
 """
 type DeleteNamespacePayload {
+  """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
   """
   The identifier of the deleted namespace.
   """
@@ -3248,6 +3282,8 @@ func (ec *executionContext) childFields_CreateCollectionPayload(ctx context.Cont
 
 func (ec *executionContext) childFields_CreateNamespacePayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "clientMutationId":
+		return ec.fieldContext_CreateNamespacePayload_clientMutationId(ctx, field)
 	case "namespace":
 		return ec.fieldContext_CreateNamespacePayload_namespace(ctx, field)
 	}
@@ -3288,6 +3324,8 @@ func (ec *executionContext) childFields_DeleteCollectionPayload(ctx context.Cont
 
 func (ec *executionContext) childFields_DeleteNamespacePayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "clientMutationId":
+		return ec.fieldContext_DeleteNamespacePayload_clientMutationId(ctx, field)
 	case "deletedIdentifier":
 		return ec.fieldContext_DeleteNamespacePayload_deletedIdentifier(ctx, field)
 	}
@@ -5361,6 +5399,29 @@ func (ec *executionContext) fieldContext_CreateCollectionPayload_collection(_ co
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateNamespacePayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.CreateNamespacePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CreateNamespacePayload_clientMutationId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientMutationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_CreateNamespacePayload_clientMutationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CreateNamespacePayload", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _CreateNamespacePayload_namespace(ctx context.Context, field graphql.CollectedField, obj *model.CreateNamespacePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5561,6 +5622,29 @@ func (ec *executionContext) _DeleteCollectionPayload_deletedCollectionId(ctx con
 }
 func (ec *executionContext) fieldContext_DeleteCollectionPayload_deletedCollectionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("DeleteCollectionPayload", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _DeleteNamespacePayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteNamespacePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeleteNamespacePayload_clientMutationId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientMutationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_DeleteNamespacePayload_clientMutationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeleteNamespacePayload", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _DeleteNamespacePayload_deletedIdentifier(ctx context.Context, field graphql.CollectedField, obj *model.DeleteNamespacePayload) (ret graphql.Marshaler) {
@@ -9778,13 +9862,20 @@ func (ec *executionContext) unmarshalInputCreateNamespaceInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"identifier", "displayName", "tier", "parentEnterpriseIdentifier"}
+	fieldsInOrder := [...]string{"clientMutationId", "identifier", "displayName", "tier", "parentEnterpriseIdentifier"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "clientMutationId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientMutationID = data
 		case "identifier":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("identifier"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -10010,13 +10101,20 @@ func (ec *executionContext) unmarshalInputDeleteNamespaceInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"identifier"}
+	fieldsInOrder := [...]string{"clientMutationId", "identifier"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "clientMutationId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientMutationId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientMutationID = data
 		case "identifier":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("identifier"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -11289,6 +11387,8 @@ func (ec *executionContext) _CreateNamespacePayload(ctx context.Context, sel ast
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("CreateNamespacePayload")
+		case "clientMutationId":
+			out.Values[i] = ec._CreateNamespacePayload_clientMutationId(ctx, field, obj)
 		case "namespace":
 			out.Values[i] = ec._CreateNamespacePayload_namespace(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11444,6 +11544,8 @@ func (ec *executionContext) _DeleteNamespacePayload(ctx context.Context, sel ast
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("DeleteNamespacePayload")
+		case "clientMutationId":
+			out.Values[i] = ec._DeleteNamespacePayload_clientMutationId(ctx, field, obj)
 		case "deletedIdentifier":
 			out.Values[i] = ec._DeleteNamespacePayload_deletedIdentifier(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

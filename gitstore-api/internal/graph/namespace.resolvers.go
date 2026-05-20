@@ -28,7 +28,10 @@ func (r *mutationResolver) CreateNamespace(ctx context.Context, input model.Crea
 		return nil, err
 	}
 
-	return &model.CreateNamespacePayload{Namespace: datastoreNamespaceToModel(ns)}, nil
+	return &model.CreateNamespacePayload{
+		ClientMutationID: input.ClientMutationID,
+		Namespace:        datastoreNamespaceToModel(ns),
+	}, nil
 }
 
 // DeleteNamespace is the resolver for the deleteNamespace field.
@@ -42,7 +45,10 @@ func (r *mutationResolver) DeleteNamespace(ctx context.Context, input model.Dele
 		return nil, err
 	}
 
-	return &model.DeleteNamespacePayload{DeletedIdentifier: input.Identifier}, nil
+	return &model.DeleteNamespacePayload{
+		ClientMutationID:  input.ClientMutationID,
+		DeletedIdentifier: input.Identifier,
+	}, nil
 }
 
 // Namespace is the resolver for the namespace field.

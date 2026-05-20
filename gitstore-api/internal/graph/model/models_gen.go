@@ -189,6 +189,8 @@ type CreateCollectionPayload struct {
 
 // Input for creating a new namespace.
 type CreateNamespaceInput struct {
+	// Client mutation ID for request tracking (Relay pattern).
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
 	// The human-readable identifier for the namespace.
 	// Must be globally unique across all tiers.
 	// DNS label format: lowercase alphanumeric and hyphens, 1–63 characters.
@@ -208,6 +210,8 @@ type CreateNamespaceInput struct {
 
 // Payload returned after successfully creating a namespace.
 type CreateNamespacePayload struct {
+	// Client mutation ID for request tracking (Relay pattern).
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
 	// The newly created namespace.
 	Namespace *Namespace `json:"namespace"`
 }
@@ -284,6 +288,8 @@ type DeleteCollectionPayload struct {
 
 // Input for deleting a namespace.
 type DeleteNamespaceInput struct {
+	// Client mutation ID for request tracking (Relay pattern).
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
 	// The identifier of the namespace to delete.
 	// Deletion is blocked if any repositories exist within the namespace.
 	// Requires the caller to be the namespace owner (createdBy) or isAdmin.
@@ -292,6 +298,8 @@ type DeleteNamespaceInput struct {
 
 // Payload returned after successfully deleting a namespace.
 type DeleteNamespacePayload struct {
+	// Client mutation ID for request tracking (Relay pattern).
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
 	// The identifier of the deleted namespace.
 	DeletedIdentifier string `json:"deletedIdentifier"`
 }

@@ -408,6 +408,70 @@ mutation {
 
 ---
 
+### createNamespace
+
+Create a namespace. Requires authentication; `ENTERPRISE` requires an admin token.
+
+```graphql
+mutation {
+  createNamespace(
+    input: {
+      clientMutationId: "create-acme-corp"
+      identifier: "acme-corp"
+      displayName: "Acme Corporation"
+      tier: USER
+    }
+  ) {
+    clientMutationId
+    namespace {
+      id
+      identifier
+      displayName
+      tier
+      createdAt
+      createdBy
+    }
+  }
+}
+```
+
+**Input Fields**:
+- `clientMutationId: String` - Client-side mutation tracking
+- `identifier: String!` - Globally unique namespace identifier
+- `displayName: String` - Optional human-friendly display name
+- `tier: NamespaceTier!` - `USER`, `ORGANISATION`, or `ENTERPRISE`
+- `parentEnterpriseIdentifier: String` - Optional parent enterprise identifier for `ORGANISATION`
+
+**Returns**: `CreateNamespacePayload!`
+
+---
+
+### deleteNamespace
+
+Delete an empty namespace. Requires the namespace owner or an admin token.
+
+```graphql
+mutation {
+  deleteNamespace(
+    input: {
+      clientMutationId: "delete-acme-corp"
+      identifier: "acme-corp"
+    }
+  ) {
+    clientMutationId
+    deletedIdentifier
+  }
+}
+```
+
+**Input Fields**:
+- `clientMutationId: String` - Client-side mutation tracking
+- `identifier: String!` - Namespace identifier to delete
+
+**Returns**: `DeleteNamespacePayload!`
+
+---
+
 ### createProduct
 
 Create a new product.

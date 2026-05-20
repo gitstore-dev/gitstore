@@ -91,7 +91,7 @@ func TestGraphQLHandlerAcceptsBearerTokenForNamespaceMutation(t *testing.T) {
 	assert.True(t, loginResponse.Data.Login.Session.User.IsAdmin)
 
 	req := httptest.NewRequest(http.MethodPost, "/graphql", strings.NewReader(`{
-		"query": "mutation { createNamespace(input: { identifier: \"alice\", tier: USER }) { namespace { identifier createdBy } } }"
+		"query": "mutation { createNamespace(input: { clientMutationId: \"create-alice\", identifier: \"alice\", tier: USER }) { clientMutationId namespace { identifier createdBy } } }"
 	}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+loginResponse.Data.Login.Session.Token)
@@ -103,7 +103,8 @@ func TestGraphQLHandlerAcceptsBearerTokenForNamespaceMutation(t *testing.T) {
 	var response struct {
 		Data struct {
 			CreateNamespace struct {
-				Namespace struct {
+				ClientMutationID string `json:"clientMutationId"`
+				Namespace        struct {
 					Identifier string `json:"identifier"`
 					CreatedBy  string `json:"createdBy"`
 				} `json:"namespace"`
@@ -115,6 +116,7 @@ func TestGraphQLHandlerAcceptsBearerTokenForNamespaceMutation(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
 	require.Empty(t, response.Errors)
+	assert.Equal(t, "create-alice", response.Data.CreateNamespace.ClientMutationID)
 	assert.Equal(t, "alice", response.Data.CreateNamespace.Namespace.Identifier)
 	assert.Equal(t, "admin", response.Data.CreateNamespace.Namespace.CreatedBy)
 }

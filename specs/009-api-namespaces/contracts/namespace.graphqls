@@ -110,6 +110,11 @@ Input for creating a new namespace.
 """
 input CreateNamespaceInput {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The human-readable identifier for the namespace.
   Must be globally unique across all tiers.
   DNS label format: lowercase alphanumeric and hyphens, 1–63 characters.
@@ -142,6 +147,11 @@ Input for deleting a namespace.
 """
 input DeleteNamespaceInput {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The identifier of the namespace to delete.
   Deletion is blocked if any repositories exist within the namespace.
   Requires the caller to be the namespace owner (createdBy) or isAdmin.
@@ -158,6 +168,11 @@ Payload returned after successfully creating a namespace.
 """
 type CreateNamespacePayload {
   """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
+  """
   The newly created namespace.
   """
   namespace: Namespace!
@@ -167,6 +182,11 @@ type CreateNamespacePayload {
 Payload returned after successfully deleting a namespace.
 """
 type DeleteNamespacePayload {
+  """
+  Client mutation ID for request tracking (Relay pattern).
+  """
+  clientMutationId: String
+
   """
   The identifier of the deleted namespace.
   """
@@ -180,10 +200,12 @@ type DeleteNamespacePayload {
 # --- Create a user namespace ---
 # mutation CreateUserNamespace {
 #   createNamespace(input: {
+#     clientMutationId: "create-acme-corp"
 #     identifier: "acme-corp"
 #     displayName: "Acme Corporation"
 #     tier: USER
 #   }) {
+#     clientMutationId
 #     namespace {
 #       id
 #       identifier
@@ -197,10 +219,12 @@ type DeleteNamespacePayload {
 # --- Create an enterprise namespace (requires isAdmin) ---
 # mutation CreateEnterpriseNamespace {
 #   createNamespace(input: {
+#     clientMutationId: "create-acme-enterprise"
 #     identifier: "acme-enterprise"
 #     displayName: "Acme Enterprise"
 #     tier: ENTERPRISE
 #   }) {
+#     clientMutationId
 #     namespace {
 #       id
 #       identifier
@@ -214,10 +238,12 @@ type DeleteNamespacePayload {
 # --- Create an org namespace with parent enterprise ---
 # mutation CreateOrgWithEnterprise {
 #   createNamespace(input: {
+#     clientMutationId: "create-acme-engineering"
 #     identifier: "acme-engineering"
 #     tier: ORGANISATION
 #     parentEnterpriseIdentifier: "acme-enterprise"
 #   }) {
+#     clientMutationId
 #     namespace {
 #       id
 #       identifier
@@ -256,7 +282,8 @@ type DeleteNamespacePayload {
 
 # --- Delete a namespace ---
 # mutation DeleteNamespace {
-#   deleteNamespace(input: { identifier: "acme-corp" }) {
+#   deleteNamespace(input: { clientMutationId: "delete-acme-corp", identifier: "acme-corp" }) {
+#     clientMutationId
 #     deletedIdentifier
 #   }
 # }
