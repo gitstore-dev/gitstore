@@ -165,6 +165,20 @@ func TestPaginateProducts(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid after cursor")
 	})
 
+	t.Run("should return error for negative first", func(t *testing.T) {
+		first := int32(-1)
+		_, err := PaginateProducts(products, &first, nil, nil, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "first must be non-negative")
+	})
+
+	t.Run("should return error for negative last", func(t *testing.T) {
+		last := int32(-1)
+		_, err := PaginateProducts(products, nil, nil, &last, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "last must be non-negative")
+	})
+
 	t.Run("should set cursors correctly", func(t *testing.T) {
 		first := int32(5)
 		conn, err := PaginateProducts(products, &first, nil, nil, nil)

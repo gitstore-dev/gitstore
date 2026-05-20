@@ -87,6 +87,13 @@ func applyCursorWindow(
 	last *int32,
 	before *string,
 ) (int, int, bool, bool, error) {
+	if first != nil && *first < 0 {
+		return 0, 0, false, false, fmt.Errorf("first must be non-negative")
+	}
+	if last != nil && *last < 0 {
+		return 0, 0, false, false, fmt.Errorf("last must be non-negative")
+	}
+
 	// Start with all edges
 	start := 0
 	end := totalCount

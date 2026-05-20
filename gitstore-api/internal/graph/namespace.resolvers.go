@@ -7,6 +7,7 @@ package graph
 
 import (
 	"context"
+	"sort"
 
 	"github.com/gitstore-dev/gitstore/api/internal/graph/model"
 	"github.com/gitstore-dev/gitstore/api/internal/middleware"
@@ -75,6 +76,9 @@ func (r *queryResolver) Namespaces(ctx context.Context, first *int32, after *str
 	if err != nil {
 		return nil, err
 	}
+	sort.SliceStable(nss, func(i, j int) bool {
+		return nss[i].Identifier < nss[j].Identifier
+	})
 	result := make([]*model.Namespace, len(nss))
 	for i, ns := range nss {
 		result[i] = datastoreNamespaceToModel(ns)
